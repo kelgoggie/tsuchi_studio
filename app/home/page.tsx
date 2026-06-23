@@ -65,7 +65,7 @@ export default function HomePage() {
               <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" />
               <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" />
             </div>
-            <div className="flex flex-col items-start gap-5 md:gap-6 md:pl-6">
+            <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-4xl leading-none md:text-5xl">studio workshops</h2>
               <span className="rounded-full bg-olive px-10 py-3 text-cream">coming soon</span>
             </div>

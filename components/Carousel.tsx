@@ -51,14 +51,15 @@ export default function Carousel() {
         {pages.map((group, i) => (
           <div
             key={i}
-            className={`flex gap-4 transition-all duration-700 ease-out ${
+            style={{ gridTemplateColumns: `repeat(${visible}, minmax(0, 1fr))` }}
+            className={`grid gap-4 transition-all duration-700 ease-out ${
               i === page
                 ? "relative translate-x-0 opacity-100"
                 : "pointer-events-none absolute inset-0 translate-x-8 opacity-0"
             }`}
           >
             {group.map((src, k) => (
-              <div key={k} className="relative aspect-[4/3] flex-1 overflow-hidden rounded-xl">
+              <div key={k} className="relative aspect-[4/3] overflow-hidden rounded-xl">
                 <Image src={src} alt="carousel image" fill className="object-cover" />
               </div>
             ))}
