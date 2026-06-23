@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -22,6 +22,13 @@ const groups = [
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
+
+  // start collapsed to an icon rail on small screens
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setIsOpen(false)
+    }
+  }, [])
 
   return (
     <aside

@@ -12,28 +12,42 @@ const images = [
   "/images/carousel-6.JPG",
 ]
 
-const VISIBLE = 3
-
-// group the images into pages of 3 (wrapping the last page) -> dots = pages
-const pages = Array.from({ length: Math.ceil(images.length / VISIBLE) }, (_, p) =>
-  Array.from({ length: VISIBLE }, (_, k) => images[(p * VISIBLE + k) % images.length])
-)
+// group the images into pages of `visible` (wrapping the last page) -> dots = pages
+function paginate(visible: number) {
+  return Array.from({ length: Math.ceil(images.length / visible) }, (_, p) =>
+    Array.from({ length: visible }, (_, k) => images[(p * visible + k) % images.length])
+  )
+}
 
 export default function Carousel() {
+  const [visible, setVisible] = useState(3)
   const [page, setPage] = useState(0)
 
+  // 1 image per slide on mobile, 3 on >= md
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)")
+    const update = () => setVisible(mq.matches ? 3 : 1)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
+
+  const pages = paginate(visible)
+
+  // auto-advance, and keep `page` in range when the layout (page count) changes
+  useEffect(() => {
+    setPage((prev) => prev % pages.length)
     const timer = setInterval(() => {
       setPage((prev) => (prev + 1) % pages.length)
     }, 4500)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [pages.length])
 
   return (
     <div>
       {/* slides */}
-      <div className="relative h-72">
+      <div className="relative h-56 sm:h-64 md:h-72">
         {pages.map((group, i) => (
           <div
             key={i}
