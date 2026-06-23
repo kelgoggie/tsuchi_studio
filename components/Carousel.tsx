@@ -47,18 +47,18 @@ export default function Carousel() {
   return (
     <div>
       {/* slides */}
-      <div className="relative h-56 sm:h-64 md:h-72">
+      <div className="relative">
         {pages.map((group, i) => (
           <div
             key={i}
-            className={`absolute inset-0 flex gap-4 transition-all duration-700 ease-out ${
+            className={`flex gap-4 transition-all duration-700 ease-out ${
               i === page
-                ? "translate-x-0 opacity-100"
-                : "pointer-events-none translate-x-8 opacity-0"
+                ? "relative translate-x-0 opacity-100"
+                : "pointer-events-none absolute inset-0 translate-x-8 opacity-0"
             }`}
           >
             {group.map((src, k) => (
-              <div key={k} className="relative h-full flex-1 overflow-hidden rounded-xl">
+              <div key={k} className="relative aspect-[4/3] flex-1 overflow-hidden rounded-xl">
                 <Image src={src} alt="carousel image" fill className="object-cover" />
               </div>
             ))}

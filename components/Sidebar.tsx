@@ -1,38 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-
-const groups = [
-  [
-    { href: "/home", label: "home", icon: "navbar_home" },
-    { href: "/about", label: "about us", icon: "navbar_heart" },
-    { href: "/gallery", label: "creations", icon: "navbar_gallery" },
-  ],
-  [
-    { href: "/workshops", label: "workshops", icon: "navbar_workshops" },
-    { href: "/contact", label: "get in touch", icon: "navbar_touch" },
-  ],
-  [
-    { href: "/account", label: "my account", icon: "navbar_account" },
-    { href: "/logout", label: "log out", icon: "navbar_logout" },
-  ],
-]
+import { navGroups } from "./navItems"
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
 
-  // start collapsed to an icon rail on small screens
-  useEffect(() => {
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      setIsOpen(false)
-    }
-  }, [])
-
   return (
     <aside
-      className={`min-h-screen shrink-0 overflow-hidden border-r border-divider bg-cream transition-all duration-300 ${
+      className={`hidden min-h-screen shrink-0 overflow-hidden border-r border-divider bg-cream transition-all duration-300 md:block ${
         isOpen ? "w-60" : "w-20"
       }`}
     >
@@ -45,8 +23,8 @@ export default function Sidebar() {
       </button>
 
       <nav className="flex min-h-[calc(100vh-4.75rem)] flex-col gap-9 px-7 pb-10">
-        {groups.map((group, i) => (
-          <div key={i} className={`flex flex-col gap-4 ${i === groups.length - 1 ? "mt-auto" : ""}`}>
+        {navGroups.map((group, i) => (
+          <div key={i} className={`flex flex-col gap-4 ${i === navGroups.length - 1 ? "mt-auto" : ""}`}>
             {group.map((item) => (
               <Link
                 key={item.href}

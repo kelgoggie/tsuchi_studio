@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
+import MobileNav from "@/components/MobileNav"
 import Carousel from "@/components/Carousel"
 import Footer from "@/components/Footer"
 
@@ -9,7 +10,7 @@ const LOREM =
 
 function WorkshopCard({ img, label }: { img: string; label: string }) {
   return (
-    <div className="relative h-48 overflow-hidden rounded-2xl shadow-sm sm:h-64">
+    <div className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-sm">
       <Image src={img} alt={label} fill className="object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
       <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
@@ -29,6 +30,7 @@ export default function HomePage() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
+        <MobileNav />
 
         <main className="flex-1 space-y-10 px-4 py-8 sm:px-6 md:space-y-16 md:px-10 md:py-12">
           {/* carousel */}
@@ -43,7 +45,7 @@ export default function HomePage() {
               <p className="max-w-xs leading-relaxed text-muted">Tsuchi is an independent multidisciplinary arts studio based in Iloilo City. Composed of a small team of artists and creatives, ...</p>
             </div>
             <figure className="relative overflow-hidden rounded-2xl bg-card shadow-sm">
-              <div className="relative h-56 w-full sm:h-72 md:h-80">
+              <div className="relative aspect-[4/3] w-full">
                 <Image
                   src="/images/display-img.JPG"
                   alt="booth"
