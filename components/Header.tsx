@@ -3,7 +3,7 @@ import Image from "next/image"
 export default function Header({ compact = false }: { compact?: boolean }) {
   return (
     <header
-      className={`relative w-full overflow-hidden bg-cover bg-fixed bg-center ${
+      className={`relative w-full overflow-hidden bg-cover bg-fixed bg-bottom sm:bg-center ${
         compact
           ? "h-40 sm:h-48 md:h-52"
           : "h-[88vh] sm:h-[90vh] md:h-[92vh]"
