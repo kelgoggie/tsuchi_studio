@@ -24,7 +24,7 @@ export default function Sidebar() {
 
       <nav className="flex min-h-[calc(100vh-4rem)] flex-col gap-7 px-6 pb-10 pt-10">
         {navGroups.map((group, i) => (
-          <div key={i} className={`flex flex-col gap-3.5 ${i === navGroups.length - 1 ? "mt-auto" : ""}`}>
+          <div key={i} className="flex flex-col gap-3.5">
             {group.map((item) => (
               <Link
                 key={item.href}

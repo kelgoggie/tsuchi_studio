@@ -17,6 +17,7 @@ export default function GalleryGrid({
   const [order, setOrder] = useState<"newest" | "oldest">("newest")
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+  const [mobileCols, setMobileCols] = useState<1 | 3>(3) // mobile-only layout toggle
 
   // `images` arrives newest-first from the server, so "oldest" is just reversed.
   const sorted = useMemo(
@@ -55,62 +56,93 @@ export default function GalleryGrid({
 
   return (
     <>
-      {/* title row: heading centered, sort dropdown aligned to it on the right */}
+      {/* header: title + subtitle centered. Controls pin to the title's right on
+          desktop, and drop below the title on mobile (so they don't overlap). */}
       <div className="relative mb-8 text-center">
-        <div className="relative flex items-center justify-center">
         <h1 className="font-script text-3xl leading-tight md:text-4xl">{title}</h1>
-
-        <div ref={sortRef} className="absolute right-0">
-          <button
-            onClick={() => setSortOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs text-muted transition hover:opacity-70"
-            aria-haspopup="listbox"
-            aria-expanded={sortOpen}
-          >
-            Sort by...
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`transition-transform duration-200 ${sortOpen ? "rotate-180" : ""}`}
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-
-          {sortOpen && (
-            <div className="absolute right-0 z-20 mt-1 min-w-[7.5rem] overflow-hidden rounded-xl bg-card py-1 shadow-lg">
-              {(["oldest", "newest"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    setOrder(opt)
-                    setSortOpen(false)
-                  }}
-                  className={`block w-full px-4 py-1.5 text-left text-xs transition hover:bg-olive/10 ${
-                    order === opt ? "font-medium text-olive" : "text-muted"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        </div>
 
         {subtitle && (
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">{subtitle}</p>
         )}
+
+        <div className="mt-4 flex items-center justify-center gap-2 sm:absolute sm:right-0 sm:top-0 sm:mt-0">
+          {/* mobile-only: switch between 3-per-row and 1-per-row */}
+          <div className="inline-flex items-center rounded-full bg-card p-1 sm:hidden">
+            <button
+              onClick={() => setMobileCols(3)}
+              aria-label="3 photos per row"
+              className={`rounded-full p-1.5 transition ${mobileCols === 3 ? "bg-olive text-cream" : "text-muted"}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setMobileCols(1)}
+              aria-label="1 photo per row"
+              className={`rounded-full p-1.5 transition ${mobileCols === 1 ? "bg-olive text-cream" : "text-muted"}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+            </button>
+          </div>
+
+          {/* sort dropdown */}
+          <div ref={sortRef} className="relative">
+            <button
+              onClick={() => setSortOpen((o) => !o)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs text-muted transition hover:opacity-70"
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
+            >
+              Sort by...
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform duration-200 ${sortOpen ? "rotate-180" : ""}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+
+            {sortOpen && (
+              <div className="absolute right-0 z-20 mt-1 min-w-[7.5rem] overflow-hidden rounded-xl bg-card py-1 shadow-lg">
+                {(["oldest", "newest"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      setOrder(opt)
+                      setSortOpen(false)
+                    }}
+                    className={`block w-full px-4 py-1.5 text-left text-xs transition hover:bg-olive/10 ${
+                      order === opt ? "font-medium text-olive" : "text-muted"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* instagram-style feed: 3 per row on mobile -> 5 on desktop */}
-      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
+      {/* instagram-style feed: mobile toggle (1 or 3 per row) -> 4 -> 5 on desktop */}
+      <div
+        className={`grid gap-1 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5 ${
+          mobileCols === 1 ? "grid-cols-1" : "grid-cols-3"
+        }`}
+      >
         {sorted.map((img, i) => (
           <div
             key={img.src + i}
@@ -129,8 +161,9 @@ export default function GalleryGrid({
                 sizes="(min-width:1024px) 20vw, (min-width:768px) 25vw, 33vw"
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              {/* darken the bottom + reveal the post date on hover */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 pt-8 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              {/* darken the bottom + show the post date. Always visible on mobile
+                  (no hover on touch); reveal on hover on desktop. */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 pt-8 opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100">
                 {img.date && (
                   <span className="text-[10px] font-medium text-white/90 sm:text-xs">{img.date}</span>
                 )}

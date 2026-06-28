@@ -24,7 +24,7 @@ export default async function GalleryPage() {
           <GalleryGrid
             images={images}
             title="⌒☆ our gallery ☆⌒"
-            subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit — a glimpse into the pieces we've made and the moments behind them."
+            subtitle="All of our favorite pieces, past and present. Interested in owning your own Tsuchi? Shop here."
           />
           
         </main>

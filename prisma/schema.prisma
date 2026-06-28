@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +8,70 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Period {
+  MORNING
+  AFTERNOON
+}
+
+enum BookingStatus {
+  PENDING // submitted, awaiting payment/receipt
+  CONFIRMED // receipt verified by admin
+  CANCELLED
+}
+
+// A workshop type and its per-session capacity rule.
+model Workshop {
+  id          String    @id @default(cuid())
+  slug        String    @unique // "wheel-throwing"
+  name        String
+  description String?
+  durationMin Int       @default(180)
+  capacity    Int // max participants per session
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  bookings    Booking[]
+}
+
+// A customer's booking for a workshop on a specific date + session.
+model Booking {
+  id         String        @id @default(cuid())
+  workshop   Workshop      @relation(fields: [workshopId], references: [id])
+  workshopId String
+  date       DateTime      @db.Date
+  period     Period
+  partySize  Int           @default(1)
+  name       String
+  email      String
+  phone      String?
+  instagram  String?
+  notes      String?
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+
+  @@index([date, period, workshopId])
+}
+
+// Days (or a single session) the studio blocks off — holidays, one-off closures.
+model Closure {
+  id     String   @id @default(cuid())
+  date   DateTime @db.Date
+  period Period? // null = whole day closed
+  reason String?
+
+  @@unique([date, period])
+}
+
+// Shop items, managed from the admin.
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  priceCents  Int
+  imageUrls   String[]
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
 }
