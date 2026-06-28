@@ -12,7 +12,7 @@ const images = [
   "/images/carousel-6.JPG",
 ]
 
-// group the images into pages of `visible` (wrapping the last page) -> dots = pages
+
 function paginate(visible: number) {
   return Array.from({ length: Math.ceil(images.length / visible) }, (_, p) =>
     Array.from({ length: visible }, (_, k) => images[(p * visible + k) % images.length])
@@ -23,7 +23,6 @@ export default function Carousel() {
   const [visible, setVisible] = useState(3)
   const [page, setPage] = useState(0)
 
-  // 1 image per slide on mobile, 3 on >= md
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)")
     const update = () => setVisible(mq.matches ? 3 : 1)
@@ -33,6 +32,7 @@ export default function Carousel() {
   }, [])
 
   const pages = paginate(visible)
+  const go = (dir: number) => setPage((p) => (p + dir + pages.length) % pages.length)
 
   // auto-advance, and keep `page` in range when the layout (page count) changes
   useEffect(() => {
@@ -45,7 +45,27 @@ export default function Carousel() {
   }, [pages.length])
 
   return (
-    <div>
+    <div className="relative px-9 sm:px-12">
+      {/* arrows — sit in the side gutters, outside the images */}
+      <button
+        onClick={() => go(-1)}
+        aria-label="Previous"
+        className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-cream/80 p-2 text-ink shadow-sm transition hover:bg-cream"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <button
+        onClick={() => go(1)}
+        aria-label="Next"
+        className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-cream/80 p-2 text-ink shadow-sm transition hover:bg-cream"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+
       {/* slides */}
       <div className="relative">
         {pages.map((group, i) => (
