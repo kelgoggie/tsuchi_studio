@@ -29,6 +29,37 @@ body {
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
 }
 
+/* Faint watercolor-paper texture tiled behind page content. A near-opaque
+   paper wash sits on top of the image so the texture stays very subtle and the
+   tile seams blend away. */
+.watercolor-bg {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(rgba(255, 249, 244, 0.93), rgba(255, 249, 244, 0.93)),
+    url("/assets/watercolor-background.jpg");
+  background-repeat: no-repeat, repeat;
+  background-size: cover, 600px;
+}
+
+/* Whole-page fade-in on load and on every route change. Opacity only (no
+   transform) so it never disturbs position:fixed children like the sidebar. */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.page-fade {
+  animation: page-fade-in 0.45s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade {
+    animation: none;
+  }
+}
+
 /* Gallery tiles drift up + fade in as they load (staggered via animation-delay).
    `both` holds the start state during the delay so tiles stay hidden until their turn. */
 @keyframes float-in {

@@ -22,12 +22,13 @@ export default async function GalleryPage() {
       <div className="flex min-w-0 flex-col md:pl-16">
         <MobileNav />
 
-        <main className="flex-1 px-4 pb-8 pt-3 sm:px-6 md:px-12 md:pb-10 md:pt-5 xl:px-20 2xl:px-32">
+        <main className="watercolor-bg flex-1 px-4 pb-8 pt-3 sm:px-6 md:px-12 md:pb-10 md:pt-5 xl:px-20 2xl:px-32 mb-10">
           <GalleryGrid
             images={images}
             title="⌒☆ our gallery ☆⌒"
-            subtitle="All of our favorite pieces, past and present. Interested in owning your own Tsuchi? Shop here."
+            subtitle="All of our favorite pieces and memories, past and present."
           />
+  
           
         </main>
 

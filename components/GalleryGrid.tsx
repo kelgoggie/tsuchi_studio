@@ -17,7 +17,6 @@ export default function GalleryGrid({
   const [order, setOrder] = useState<"newest" | "oldest">("newest")
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
-  const [mobileCols, setMobileCols] = useState<1 | 3>(3) // mobile-only layout toggle
 
   // `images` arrives newest-first from the server, so "oldest" is just reversed.
   const sorted = useMemo(
@@ -66,31 +65,6 @@ export default function GalleryGrid({
         )}
 
         <div className="mt-4 flex items-center justify-center gap-2 sm:absolute sm:right-0 sm:top-0 sm:mt-0">
-          {/* mobile-only: switch between 3-per-row and 1-per-row */}
-          <div className="inline-flex items-center rounded-full bg-card p-1 sm:hidden">
-            <button
-              onClick={() => setMobileCols(3)}
-              aria-label="3 photos per row"
-              className={`rounded-full p-1.5 transition ${mobileCols === 3 ? "bg-olive text-cream" : "text-muted"}`}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setMobileCols(1)}
-              aria-label="1 photo per row"
-              className={`rounded-full p-1.5 transition ${mobileCols === 1 ? "bg-olive text-cream" : "text-muted"}`}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="4" y="4" width="16" height="16" rx="2" />
-              </svg>
-            </button>
-          </div>
-
           {/* sort dropdown */}
           <div ref={sortRef} className="relative">
             <button
@@ -137,12 +111,8 @@ export default function GalleryGrid({
         </div>
       </div>
 
-      {/* instagram-style feed: mobile toggle (1 or 3 per row) -> 4 -> 5 on desktop */}
-      <div
-        className={`grid gap-1 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5 ${
-          mobileCols === 1 ? "grid-cols-1" : "grid-cols-3"
-        }`}
-      >
+      {/* instagram-style feed: 2 per row on mobile -> 4 -> 5 on desktop */}
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
         {sorted.map((img, i) => (
           <div
             key={img.src + i}
@@ -182,7 +152,7 @@ export default function GalleryGrid({
           <button
             onClick={close}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30"
+            className="absolute right-4 top-4 z-10 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -192,7 +162,7 @@ export default function GalleryGrid({
           <button
             onClick={(e) => { e.stopPropagation(); step(-1) }}
             aria-label="Previous"
-            className="absolute left-2 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30 sm:left-6"
+            className="absolute left-2 z-10 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30 sm:left-6"
           >
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
@@ -201,7 +171,7 @@ export default function GalleryGrid({
           <button
             onClick={(e) => { e.stopPropagation(); step(1) }}
             aria-label="Next"
-            className="absolute right-2 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30 sm:right-6"
+            className="absolute right-2 z-10 rounded-full bg-cream/15 p-2 text-cream transition hover:bg-cream/30 sm:right-6"
           >
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6" />

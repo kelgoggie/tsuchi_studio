@@ -45,12 +45,12 @@ export default function Carousel() {
   }, [pages.length])
 
   return (
-    <div className="relative px-9 sm:px-12">
-      {/* arrows — sit in the side gutters, outside the images */}
+    <div className="relative">
+      {/* arrows — sage, floating over the faded image edges */}
       <button
         onClick={() => go(-1)}
         aria-label="Previous"
-        className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-cream/80 p-2 text-ink shadow-sm transition hover:bg-cream"
+        className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-sage/90 p-2 text-cream shadow-md transition hover:bg-sage sm:left-3"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
@@ -59,7 +59,7 @@ export default function Carousel() {
       <button
         onClick={() => go(1)}
         aria-label="Next"
-        className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-cream/80 p-2 text-ink shadow-sm transition hover:bg-cream"
+        className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-sage/90 p-2 text-cream shadow-md transition hover:bg-sage sm:right-3"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m9 18 6-6-6-6" />

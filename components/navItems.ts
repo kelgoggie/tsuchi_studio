@@ -5,7 +5,7 @@ export const navGroups: NavItem[][] = [
   [
     { href: "/home", label: "home", icon: "navbar_home" },
     { href: "/about", label: "about us", icon: "navbar_heart" },
-    { href: "/gallery", label: "creations", icon: "navbar_gallery" },
+    { href: "/gallery", label: "gallery", icon: "navbar_gallery" },
   ],
   [
     { href: "/workshops", label: "workshops", icon: "navbar_workshops" },

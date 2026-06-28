@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Beth_Ellen, Inter } from "next/font/google"
+import PageFade from "@/components/PageFade"
 
 const bethEllen = Beth_Ellen({
   weight: "400",
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${bethEllen.variable} ${inter.variable}`}>
-        {children}
+        <PageFade>{children}</PageFade>
       </body>
     </html>
   )

@@ -17,7 +17,7 @@ function WorkshopCard({ img, label }: { img: string; label: string }) {
       <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
         <span className="font-script text-2xl text-white sm:text-3xl">{label}</span>
         <span className="rounded-full bg-olive/85 px-4 py-1.5 text-sm text-cream">
-          view available dates
+          view classes
         </span>
       </div>
     </div>
@@ -34,15 +34,15 @@ export default function HomePage() {
       <div className="flex min-w-0 flex-col md:pl-16">
         <MobileNav />
 
-        <main className="flex-1 space-y-10 px-4 py-8 sm:px-6 md:space-y-12 md:px-12 md:py-10 xl:px-20 2xl:px-32">
+        <main className="watercolor-bg flex-1 space-y-10 px-4 py-8 sm:px-6 md:space-y-12 md:px-12 md:py-10 xl:px-20 2xl:px-32">
           {/* gallery */}
-          <section>
-            <h2 className="mb-1 font-script text-3xl leading-tight md:text-4xl">gallery</h2>
-            <div className="relative py-5 sm:py-7">
+          <section className="-mb-6 md:-mb-8">
+            <h2 className="mb-1 font-script text-3xl leading-tight md:text-5xl text-center">welcome to our home! ꩜</h2>
+            <div className="relative pt-5 pb-3 sm:pt-7 sm:pb-4">
               <Carousel />
               <Link
                 href="/gallery"
-                className="absolute bottom-5 right-9 z-10 text-xs font-medium text-olive transition hover:opacity-70 sm:bottom-7 sm:right-12"
+                className="absolute bottom-3 right-3 z-10 text-xs font-medium text-olive transition hover:opacity-70 sm:bottom-4 sm:right-6"
               >
                 view all photos...
               </Link>
@@ -50,10 +50,10 @@ export default function HomePage() {
           </section>
 
           {/* about us */}
-          <section className="text-center">
-            <h2 className="mb-3 font-script text-3xl leading-tight md:text-4xl">about us</h2>
-            <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted">
-              Tsuchi is an independent multidisciplinary arts studio based in Iloilo City. Composed of a small team of artists and creatives, our focus is on revering the natural bumps and flaws in manmade crafts, as well as cultivating a safe space for art and exploration for both beginners and novices alike.
+          <section>
+            <h2 className="mt-10 mb-5 font-script text-3xl leading-tight md:text-5xl">about us</h2>
+            <p className="max-w-xl text-sm leading-relaxed text-muted">
+              Tsuchi is an independent multidisciplinary arts studio <b>based in Iloilo City</b>. Composed of a small team of artists and creatives, our focus is on revering the natural bumps and flaws in manmade crafts, as well as cultivating a safe space for art and exploration for both <b>beginners</b> and <b>novices</b> alike.
             </p>
           </section>
 
@@ -65,13 +65,13 @@ export default function HomePage() {
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>
-              <span className="rounded-full bg-olive px-8 py-2.5 text-sm text-cream">coming soon</span>
+              <p className="mx-auto max-w-xl text-justify text-sm leading-relaxed text-muted">From <b>handbuilding to wheel-throwing</b>, Tsuchi has something good for everyone out there.</p>
             </div>
           </section>
 
           {/* heading */}
           <section>
-            <h2 className="mb-3 font-script text-3xl leading-tight md:text-4xl">crafted with love</h2>
+            <h2 className="mb-6 font-script text-3xl leading-tight md:text-4xl">crafted with love, perfect for gifts</h2>
             <p className="max-w-2xl text-sm leading-relaxed text-muted">
               Tsuchi studio's creations are hand-built with love, and are always in search for their forever home.
             </p>
