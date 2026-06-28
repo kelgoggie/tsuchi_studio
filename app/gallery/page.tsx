@@ -5,8 +5,10 @@ import Footer from "@/components/Footer"
 import GalleryGrid from "@/components/GalleryGrid"
 import { getGalleryImages } from "@/lib/gallery"
 
-// Re-check Cloudinary for newly uploaded photos at most once a minute.
-export const revalidate = 60
+// Re-check Cloudinary for newly uploaded photos at most once an hour. Each
+// render makes ~1 + N EXIF calls, so a long window keeps us well under
+// Cloudinary's 500 admin-ops/hour limit. New uploads appear within the hour.
+export const revalidate = 3600
 
 export default async function GalleryPage() {
   const images = await getGalleryImages()
