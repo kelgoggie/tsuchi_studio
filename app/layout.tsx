@@ -16,9 +16,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Tsuchi Studio Iloilo",
   description: "Coming Soon",
-  icons: {
-    icon: "/assets/tsuchi-icon.png",
-  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
