@@ -37,6 +37,28 @@ export function maxBookingDateStr(): string {
   return bookingWindow().max.toISOString().slice(0, 10)
 }
 
+// Used when the DB is unreachable so pages still render with sane numbers.
+const DEFAULT_CAPACITY: Record<string, number> = {
+  handbuilding: 8,
+  "wheel-throwing": 2,
+  "rug-tufting": 2,
+}
+
+/** Map of workshopId -> capacity, falling back to defaults if the DB is down. */
+export async function getCapacities(): Promise<Record<string, number>> {
+  try {
+    const ws = await prisma.workshop.findMany({ select: { id: true, capacity: true } })
+    if (ws.length) return Object.fromEntries(ws.map((w) => [w.id, w.capacity]))
+  } catch (err) {
+    console.error("Capacity fetch failed, using defaults:", err)
+  }
+  return DEFAULT_CAPACITY
+}
+
+export function capacityFor(map: Record<string, number>, workshopId: string): number {
+  return map[workshopId] ?? DEFAULT_CAPACITY[workshopId] ?? 2
+}
+
 /** Has the owner blocked this whole day, or this specific session? */
 export async function isClosed(date: Date, period: Period): Promise<boolean> {
   const c = await prisma.closure.findFirst({

@@ -14,13 +14,10 @@ function WorkshopCard({ img, label, href }: { img: string; label: string; href: 
       href={href}
       className="group relative block aspect-[4/3] overflow-hidden rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
     >
-      <Image src={img} alt={label} fill className="object-cover" />
+      <Image src={img} alt={label} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-      <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
+      <div className="absolute bottom-4 left-4">
         <span className="font-script text-2xl text-white sm:text-3xl">{label}</span>
-        <span className="rounded-full bg-olive/85 px-4 py-1.5 text-sm text-cream">
-          view classes
-        </span>
       </div>
     </Link>
   )
@@ -60,12 +57,15 @@ export default function HomePage() {
           {/* studio workshops */}
           <section className="grid grid-cols-1 items-center gap-6 md:grid-cols-[2fr_1fr] md:gap-8">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-              <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops#pottery" />
-              <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" href="/workshops#rug-tufting" />
+              <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops" />
+              <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" href="/workshops" />
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>
               <p className="mx-auto max-w-xl text-justify text-sm leading-relaxed text-muted">From <b>handbuilding to wheel-throwing</b>, Tsuchi has something good for everyone out there.</p>
+              <Link href="/workshops" className="rounded-full bg-olive px-8 py-2.5 text-sm text-cream transition hover:opacity-90">
+                view workshops
+              </Link>
             </div>
           </section>
 

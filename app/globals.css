@@ -29,37 +29,23 @@ body {
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
 }
 
-/* Workshop detail panel unfurls sideways from the card (clip-path so text
-   isn't distorted). Right for pottery, left for rug tufting. */
-@keyframes card-reveal-right {
+/* Workshop detail unfurls downward inside the card (clip-path so text
+   isn't distorted). */
+@keyframes card-reveal-down {
   from {
     opacity: 0;
-    clip-path: inset(0 100% 0 0);
+    clip-path: inset(0 0 100% 0);
   }
   to {
     opacity: 1;
     clip-path: inset(0 0 0 0);
   }
 }
-@keyframes card-reveal-left {
-  from {
-    opacity: 0;
-    clip-path: inset(0 0 0 100%);
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-  }
-}
-.card-open-right {
-  animation: card-reveal-right 0.4s ease-out;
-}
-.card-open-left {
-  animation: card-reveal-left 0.4s ease-out;
+.card-open-down {
+  animation: card-reveal-down 0.35s ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .card-open-right,
-  .card-open-left {
+  .card-open-down {
     animation: none;
   }
 }

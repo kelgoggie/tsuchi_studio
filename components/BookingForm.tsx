@@ -5,20 +5,31 @@ import { useState } from "react"
 const FIELD =
   "w-full rounded-lg border border-divider bg-paper px-3 py-2 text-sm outline-none focus:border-olive"
 
+const peso = (n: number) => `₱${n.toLocaleString()}`
+
 export default function BookingForm({
   workshopId,
   capacity,
   workshopLabel,
+  price,
+  addon,
 }: {
   workshopId: string
   capacity: number
   workshopLabel?: string
+  price: number
+  addon?: { price: number; label: string }
 }) {
+  const [partySize, setPartySize] = useState(1)
+  const [addonChecked, setAddonChecked] = useState(false)
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [message, setMessage] = useState("")
 
+  const perPerson = price + (addon && addonChecked ? addon.price : 0)
+  const subtotal = perPerson * partySize
+  const deposit = Math.round(subtotal / 2)
+
   const today = new Date().toISOString().slice(0, 10)
-  // bookings open up to 2 months ahead (matches the server-side limit)
   const maxDate = (() => {
     const d = new Date()
     d.setMonth(d.getMonth() + 2)
@@ -32,14 +43,18 @@ export default function BookingForm({
     setMessage("")
 
     const data = Object.fromEntries(new FormData(form).entries())
-    // tag the chosen offering in notes (e.g. medium vs large rug tufting share capacity)
-    const notes = [workshopLabel ? `[${workshopLabel}]` : "", data.notes]
+    const notes = [
+      workshopLabel ? `[${workshopLabel}]` : "",
+      addon && addonChecked ? `+ add-on (${peso(addon.price)})` : "",
+      data.notes,
+    ]
       .filter(Boolean)
       .join(" ")
+
     const res = await fetch("/api/book", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, notes, workshopId }),
+      body: JSON.stringify({ ...data, partySize, notes, workshopId }),
     })
     const json = await res.json().catch(() => ({}))
 
@@ -65,7 +80,7 @@ export default function BookingForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-3">
       <input name="name" required placeholder="Full name" className={FIELD} />
       <input name="email" type="email" required placeholder="Email" className={FIELD} />
       <input name="phone" placeholder="Phone (optional)" className={FIELD} />
@@ -79,34 +94,58 @@ export default function BookingForm({
         <option value="AFTERNOON">Afternoon · 1:00–4:00</option>
         <option value="EVENING">Evening · 4:00–8:00</option>
       </select>
-      <input
-        name="partySize"
-        type="number"
-        min={1}
-        max={capacity}
-        defaultValue={1}
-        className={FIELD}
-        aria-label="Number of people"
-      />
-      <p className="self-center text-xs text-muted">Up to {capacity} per session</p>
-      <textarea
-        name="notes"
-        placeholder="Anything we should know? (optional)"
-        rows={2}
-        className={`${FIELD} sm:col-span-2`}
-      />
 
-      <p className="text-xs text-muted sm:col-span-2">
-        After submitting, scan the studio QR to pay and send your receipt via Instagram or email — we&apos;ll
-        confirm your slot once it&apos;s verified.
+      <label className="flex items-center justify-between gap-3 text-sm text-muted">
+        <span>Number of people (up to {capacity})</span>
+        <input
+          type="number"
+          min={1}
+          max={capacity}
+          value={partySize}
+          onChange={(e) => setPartySize(Math.max(1, Math.min(capacity, Number(e.target.value) || 1)))}
+          className="w-20 rounded-lg border border-divider bg-paper px-3 py-2 text-sm outline-none focus:border-olive"
+        />
+      </label>
+
+      {addon && (
+        <label className="flex items-start gap-2 rounded-lg border border-divider bg-paper p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={addonChecked}
+            onChange={(e) => setAddonChecked(e.target.checked)}
+            className="mt-0.5 accent-olive"
+          />
+          <span>
+            Add <span className="font-medium">{addon.label}</span> (+{peso(addon.price)}/person)
+          </span>
+        </label>
+      )}
+
+      <textarea name="notes" placeholder="Anything we should know? (optional)" rows={2} className={FIELD} />
+
+      {/* live subtotal */}
+      <div className="rounded-lg bg-card px-3 py-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted">Subtotal</span>
+          <span className="font-semibold">{peso(subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-xs text-muted">
+          <span>50% deposit to reserve</span>
+          <span>{peso(deposit)}</span>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted">
+        After submitting, scan the studio QR to pay your deposit and send the receipt via Instagram or email —
+        we&apos;ll confirm your slot once it&apos;s verified.
       </p>
 
-      {status === "error" && <p className="text-xs text-red-600 sm:col-span-2">{message}</p>}
+      {status === "error" && <p className="text-xs text-red-600">{message}</p>}
 
       <button
         type="submit"
         disabled={status === "loading"}
-        className="rounded-full bg-olive px-6 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:opacity-60 sm:col-span-2"
+        className="mt-auto rounded-full bg-olive px-6 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:opacity-60"
       >
         {status === "loading" ? "Sending…" : "Request booking"}
       </button>

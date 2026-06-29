@@ -20,7 +20,7 @@ function Icon({ children }: { children: React.ReactNode }) {
 
 export default function Footer() {
   return (
-    <footer className="bg-ink px-8 py-7 text-cream/90 md:px-12">
+    <footer className="mt-16 bg-ink px-8 py-7 text-cream/90 md:px-12">
       <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
         {/* brand */}
         <div className="flex flex-col gap-2">
