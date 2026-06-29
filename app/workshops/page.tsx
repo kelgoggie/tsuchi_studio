@@ -21,7 +21,7 @@ export default async function WorkshopsPage() {
         <main className="flex-1 px-4 pb-12 pt-8 sm:px-6 md:px-12 md:pt-10 xl:px-20 2xl:px-32">
           <h1 className="mb-2 text-center font-script text-4xl leading-tight md:text-5xl">❀ studio workshops ❀</h1>
           <p className="mx-auto mb-10 max-w-md text-center text-sm leading-relaxed text-muted">
-            Pick a class to see the details and book a session. Open Tuesday–Sunday, mornings to evenings.
+            Pick a class to see the details and book a session.
           </p>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

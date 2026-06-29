@@ -27,7 +27,7 @@ export default async function BookPage({
         <main className="flex-1 px-4 pb-12 pt-8 sm:px-6 md:px-12 md:pt-10 xl:px-20 2xl:px-32">
           <div>
             <Link href="/workshops" className="text-sm text-olive transition hover:opacity-70">
-              ← all workshops
+              back to  workshops
             </Link>
 
             {!workshop ? (
