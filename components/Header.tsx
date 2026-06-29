@@ -11,7 +11,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     >
 
       {/* corner label */}
-      <span className="absolute right-4 top-3 text-xs text-white/90 drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)] sm:right-6 sm:top-4 sm:text-sm">
+      <span className="absolute bottom-3 right-4 text-xs text-white/90 drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)] sm:bottom-4 sm:right-6 sm:text-sm">
         earthen reverie | 2026
       </span>
 

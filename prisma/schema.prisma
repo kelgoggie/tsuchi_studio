@@ -11,8 +11,9 @@ datasource db {
 }
 
 enum Period {
-  MORNING
-  AFTERNOON
+  MORNING // 9:00–12:00
+  AFTERNOON // 1:00–4:00
+  EVENING // 4:00–8:00
 }
 
 enum BookingStatus {

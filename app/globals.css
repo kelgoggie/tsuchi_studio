@@ -29,16 +29,39 @@ body {
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
 }
 
-/* Faint watercolor-paper texture tiled behind page content. A near-opaque
-   paper wash sits on top of the image so the texture stays very subtle and the
-   tile seams blend away. */
-.watercolor-bg {
-  background-color: var(--color-paper);
-  background-image:
-    linear-gradient(rgba(255, 249, 244, 0.93), rgba(255, 249, 244, 0.93)),
-    url("/assets/watercolor-background.jpg");
-  background-repeat: no-repeat, repeat;
-  background-size: cover, 600px;
+/* Workshop detail panel unfurls sideways from the card (clip-path so text
+   isn't distorted). Right for pottery, left for rug tufting. */
+@keyframes card-reveal-right {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes card-reveal-left {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+.card-open-right {
+  animation: card-reveal-right 0.4s ease-out;
+}
+.card-open-left {
+  animation: card-reveal-left 0.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-open-right,
+  .card-open-left {
+    animation: none;
+  }
 }
 
 /* Whole-page fade-in on load and on every route change. Opacity only (no

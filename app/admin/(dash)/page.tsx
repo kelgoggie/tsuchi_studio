@@ -65,7 +65,10 @@ export default async function AdminBookingsPage() {
                 <tr key={b.id} className="border-b border-divider/60 last:border-0">
                   <td className="whitespace-nowrap px-4 py-3">{fmtDate(b.date)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{PERIOD_LABELS[b.period]}</td>
-                  <td className="px-4 py-3">{b.workshop.name}</td>
+                  <td className="px-4 py-3">
+                    {b.workshop.name}
+                    {b.notes && <div className="mt-0.5 text-xs text-muted">{b.notes}</div>}
+                  </td>
                   <td className="px-4 py-3">{b.name}</td>
                   <td className="px-4 py-3 text-xs text-muted">
                     <div>{b.email}</div>

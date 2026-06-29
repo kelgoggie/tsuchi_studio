@@ -1,17 +1,19 @@
 import Image from "next/image"
 import Link from "next/link"
 import Header from "@/components/Header"
-import Sidebar from "@/components/Sidebar"
-import MobileNav from "@/components/MobileNav"
+import Navbar from "@/components/Navbar"
 import Carousel from "@/components/Carousel"
 import Footer from "@/components/Footer"
 
 const LOREM =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
-function WorkshopCard({ img, label }: { img: string; label: string }) {
+function WorkshopCard({ img, label, href }: { img: string; label: string; href: string }) {
   return (
-    <div className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+    <Link
+      href={href}
+      className="group relative block aspect-[4/3] overflow-hidden rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
+    >
       <Image src={img} alt={label} fill className="object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
       <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
@@ -20,21 +22,19 @@ function WorkshopCard({ img, label }: { img: string; label: string }) {
           view classes
         </span>
       </div>
-    </div>
+    </Link>
   )
 }
 
 export default function HomePage() {
   return (
     <div className="relative min-h-screen bg-paper">
-      <Sidebar />
+      <Navbar />
 
       <Header />
 
-      <div className="flex min-w-0 flex-col md:pl-16">
-        <MobileNav />
-
-        <main className="watercolor-bg flex-1 space-y-10 px-4 py-8 sm:px-6 md:space-y-12 md:px-12 md:py-10 xl:px-20 2xl:px-32">
+      <div className="flex min-w-0 flex-col">
+        <main className="flex-1 space-y-10 px-4 py-8 sm:px-6 md:space-y-12 md:px-12 md:py-10 xl:px-20 2xl:px-32">
           {/* gallery */}
           <section className="-mb-6 md:-mb-8">
             <h2 className="mb-1 font-script text-3xl leading-tight md:text-5xl text-center">welcome to our home! ꩜</h2>
@@ -60,8 +60,8 @@ export default function HomePage() {
           {/* studio workshops */}
           <section className="grid grid-cols-1 items-center gap-6 md:grid-cols-[2fr_1fr] md:gap-8">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-              <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" />
-              <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" />
+              <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops#pottery" />
+              <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" href="/workshops#rug-tufting" />
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>

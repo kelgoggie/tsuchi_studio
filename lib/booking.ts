@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma"
 import { BookingStatus, type Period } from "@/app/generated/prisma/client"
 
-export const PERIODS = ["MORNING", "AFTERNOON"] as const
+export const PERIODS = ["MORNING", "AFTERNOON", "EVENING"] as const
 
 export const PERIOD_LABELS: Record<Period, string> = {
   MORNING: "Morning · 9:00–12:00",
-  AFTERNOON: "Afternoon · 1:30–4:30",
+  AFTERNOON: "Afternoon · 1:00–4:00",
+  EVENING: "Evening · 4:00–8:00",
 }
 
 const ACTIVE = [BookingStatus.PENDING, BookingStatus.CONFIRMED]
@@ -20,6 +21,20 @@ export function parseDateOnly(s: string): Date | null {
 /** Studio is open Tue–Sun (closed Mondays). */
 export function isOpenDay(date: Date): boolean {
   return date.getUTCDay() !== 1
+}
+
+/** Bookings are allowed from today up to 2 months ahead (the maximum window). */
+export function bookingWindow(): { min: Date; max: Date } {
+  const now = new Date()
+  const min = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  const max = new Date(min)
+  max.setUTCMonth(max.getUTCMonth() + 2)
+  return { min, max }
+}
+
+/** "YYYY-MM-DD" two months out — for the date input's `max` attribute. */
+export function maxBookingDateStr(): string {
+  return bookingWindow().max.toISOString().slice(0, 10)
 }
 
 /** Has the owner blocked this whole day, or this specific session? */

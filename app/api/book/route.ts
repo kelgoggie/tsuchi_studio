@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createBooking, isClosed, isOpenDay, parseDateOnly, PERIODS } from "@/lib/booking"
+import { bookingWindow, createBooking, isClosed, isOpenDay, parseDateOnly, PERIODS } from "@/lib/booking"
 import { forwardToSheet } from "@/lib/sheets"
 import type { Period } from "@/app/generated/prisma/client"
 
@@ -32,6 +32,13 @@ export async function POST(req: Request) {
   }
   if (!isOpenDay(date)) {
     return NextResponse.json({ error: "The studio is closed on Mondays." }, { status: 400 })
+  }
+  const { min, max } = bookingWindow()
+  if (date < min) {
+    return NextResponse.json({ error: "That date has already passed." }, { status: 400 })
+  }
+  if (date > max) {
+    return NextResponse.json({ error: "Bookings can only be made up to 2 months in advance." }, { status: 400 })
   }
   if (await isClosed(date, period)) {
     return NextResponse.json({ error: "That session isn't available." }, { status: 400 })
