@@ -2,6 +2,7 @@ import Link from "next/link"
 import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
+import ContactSection from "@/components/ContactSection"
 import WorkshopGrid from "@/components/WorkshopGrid"
 import { WORKSHOPS } from "@/lib/workshops"
 import { capacityFor, getCapacities } from "@/lib/booking"
@@ -32,7 +33,7 @@ export default async function WorkshopsPage() {
           <p className="mx-auto mt-12 max-w-xl text-center text-sm leading-relaxed text-muted">
             Interested in booking a commission, a corporate workshop or a private event?{" "}
             <Link
-              href="/contact"
+              href="#contact"
               className="font-medium text-olive underline underline-offset-2 transition hover:opacity-70"
             >
               Contact us
@@ -40,6 +41,8 @@ export default async function WorkshopsPage() {
             for more details.
           </p>
         </main>
+
+        <ContactSection />
 
         <Footer />
       </div>

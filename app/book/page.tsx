@@ -3,6 +3,7 @@ import Link from "next/link"
 import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
+import ContactSection from "@/components/ContactSection"
 import BookingForm from "@/components/BookingForm"
 import { getWorkshop, WORKSHOPS } from "@/lib/workshops"
 import { capacityFor, getCapacities } from "@/lib/booking"
@@ -115,6 +116,8 @@ export default async function BookPage({
             )}
           </div>
         </main>
+
+        <ContactSection />
 
         <Footer />
       </div>

@@ -4,6 +4,7 @@ import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Carousel from "@/components/Carousel"
 import Footer from "@/components/Footer"
+import ContactSection from "@/components/ContactSection"
 
 const LOREM =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
@@ -83,6 +84,8 @@ export default function HomePage() {
             </p>
           </section>
         </main>
+
+        <ContactSection />
 
         <Footer />
       </div>

@@ -1,6 +1,7 @@
 import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
+import ContactSection from "@/components/ContactSection"
 import GalleryGrid from "@/components/GalleryGrid"
 import { getGalleryImages } from "@/lib/gallery"
 
@@ -29,6 +30,8 @@ export default async function GalleryPage() {
   
           
         </main>
+
+        <ContactSection />
 
         <Footer />
       </div>
