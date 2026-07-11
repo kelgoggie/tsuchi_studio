@@ -4,7 +4,6 @@ export type NavItem = { href: string; label: string; icon: string }
 export const navGroups: NavItem[][] = [
   [
     { href: "/home", label: "home", icon: "navbar_home" },
-    { href: "/about", label: "about us", icon: "navbar_heart" },
     { href: "/gallery", label: "gallery", icon: "navbar_gallery" },
   ],
   [

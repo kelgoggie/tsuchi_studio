@@ -45,38 +45,38 @@ export default function BookingCalendar({
   ]
 
   return (
-    <div className="rounded-lg border border-divider bg-paper p-3">
+    <div className="max-w-[19rem] rounded-lg border border-divider bg-paper p-2.5">
       <div className="mb-2 flex items-center justify-between">
         <button
           type="button"
           disabled={!canPrev}
           onClick={() => setView(new Date(year, month - 1, 1))}
-          className="rounded px-2 py-1 text-muted transition hover:bg-card disabled:opacity-30"
+          className="rounded px-2 py-0.5 text-olive transition hover:bg-olive/10 disabled:opacity-25"
           aria-label="Previous month"
         >
           ‹
         </button>
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-olive">
           {view.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
         </span>
         <button
           type="button"
           disabled={!canNext}
           onClick={() => setView(new Date(year, month + 1, 1))}
-          className="rounded px-2 py-1 text-muted transition hover:bg-card disabled:opacity-30"
+          className="rounded px-2 py-0.5 text-olive transition hover:bg-olive/10 disabled:opacity-25"
           aria-label="Next month"
         >
           ›
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase text-muted">
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-medium uppercase text-olive/60">
         {WEEKDAYS.map((w) => (
           <div key={w}>{w}</div>
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-1 grid grid-cols-7 gap-0.5">
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />
           const date = new Date(year, month, day)
@@ -84,18 +84,21 @@ export default function BookingCalendar({
           // closed Mondays, past dates, beyond the 2-month window, or fully booked
           const disabled = date < today || date > max || date.getDay() === 1 || dayFull(s)
           const isSel = selected === s
+          const isToday = s === toStr(today)
           return (
             <button
               key={i}
               type="button"
               disabled={disabled}
               onClick={() => onSelect(s)}
-              className={`aspect-square rounded-md text-xs transition ${
+              className={`aspect-square rounded-md text-[11px] transition ${
                 isSel
                   ? "bg-olive text-cream"
                   : disabled
                     ? "cursor-not-allowed text-muted/40 line-through"
-                    : "hover:bg-card"
+                    : isToday
+                      ? "text-olive ring-1 ring-inset ring-olive/50 hover:bg-olive/10"
+                      : "hover:bg-olive/10"
               }`}
             >
               {day}

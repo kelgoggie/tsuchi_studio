@@ -17,7 +17,7 @@ export default function ComingSoon() {
         />
         <h1 className="font-[family-name:var(--font-beth-ellen)] text-7xl"> tsuchi</h1>
       </div>
-      <span className="font-[family-name:var(--font-inter)] text-center leading-none">tsuchi-studio.com is under construction - <p> see you soon!</p></span>
+      <span className="font-[family-name:var(--font-inter)] text-center leading-none">tsuchi-studio.com is under construction - see you soon!</span>
 
     <a href="https://www.instagram.com/tsuchi.studio" target="_blank" rel="noopener noreferrer" className = "absolute bottom-26 flex flex-row items-center gap-2">
         <Image

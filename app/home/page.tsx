@@ -49,16 +49,22 @@ export default function HomePage() {
           {/* about us */}
           <section>
             <h2 className="mt-10 mb-5 font-script text-3xl leading-tight md:text-5xl">about us</h2>
-            <p className="max-w-xl text-sm leading-relaxed text-muted">
-              Tsuchi is an independent multidisciplinary arts studio <b>based in Iloilo City</b>. Composed of a small team of artists and creatives, our focus is on revering the natural bumps and flaws in manmade crafts, as well as cultivating a safe space for art and exploration for both <b>beginners</b> and <b>novices</b> alike.
-            </p>
+            <div className="max-w-xl space-y-3 text-sm leading-relaxed text-muted">
+              <p>
+                Tsuchi is an independent multidisciplinary arts studio <b>rooted in nature</b>.
+              </p>
+              <p>
+                Perfection is not the pursuit, but connection. A quiet reverence for what is slightly off, slightly worn, and deeply felt. Tsuchi invites a deeper appreciation for the objects that live alongside us.
+              </p>
+            </div>
           </section>
 
           {/* studio workshops */}
           <section className="grid grid-cols-1 items-center gap-6 md:grid-cols-[2fr_1fr] md:gap-8">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
               <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops" />
-              <WorkshopCard img="/images/carousel-4.JPG" label="Rug-tufting" href="/workshops" />
+              <WorkshopCard img="/images/rug-tugting-01.JPG" label="Rug-tufting" href="/workshops" />
+              <WorkshopCard img="/images/carousel-6.JPG" label="Ceramic Painting" href="/workshops" />
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>

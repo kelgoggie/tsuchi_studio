@@ -2,25 +2,32 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
 import type { WorkshopOffering } from "@/lib/workshops"
 
 export default function WorkshopCard({
   workshop,
   capacity,
+  open,
+  onOpen,
+  onClose,
 }: {
   workshop: WorkshopOffering
   capacity: number
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const { slug, label, titleScript, image, price, inclusions, addon } = workshop
+  const { slug, label, titleScript, image, price, priceOptions, priceNote, inclusions, addon } = workshop
 
   return (
     <div className="self-start rounded-2xl border border-divider bg-card p-3 shadow-sm">
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-card">
-        {/* front — photo */}
-        <div
-          className={`absolute inset-0 transition-opacity duration-300 ${
+        {/* front — photo. The whole cover opens the details. */}
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`View ${label} details`}
+          className={`absolute inset-0 block text-left transition-opacity duration-300 ${
             open ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >
@@ -32,21 +39,20 @@ export default function WorkshopCard({
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4">
-            <div>
-              <h3 className="font-script text-2xl leading-tight text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]">
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <h3 className="font-script text-2xl leading-snug text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]">
                 {titleScript}
               </h3>
-              <p className="text-xs text-white/85">(max. {capacity} per timeslot)</p>
+              {capacity < 1000 && (
+                <p className="mt-1.5 text-xs text-white/85">max. {capacity} per timeslot</p>
+              )}
             </div>
-            <button
-              onClick={() => setOpen(true)}
-              className="shrink-0 rounded-full bg-olive px-3 py-1 text-xs font-medium text-cream transition hover:opacity-90"
-            >
+            <span className="shrink-0 rounded-full bg-olive px-3 py-1 text-xs font-medium text-cream">
               view more
-            </button>
+            </span>
           </div>
-        </div>
+        </button>
 
         {/* back — details over the solid card color */}
         <div
@@ -55,7 +61,7 @@ export default function WorkshopCard({
           }`}
         >
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             aria-label="Close"
             className="absolute right-3 top-3 text-muted transition hover:text-foreground"
           >
@@ -65,7 +71,19 @@ export default function WorkshopCard({
           </button>
 
           <h3 className="pr-6 font-script text-2xl leading-tight">{titleScript}</h3>
-          <p className="text-sm font-semibold text-olive">₱{price.toLocaleString()}/person</p>
+          {priceNote ? (
+            <p className="text-sm font-semibold text-olive">{priceNote}</p>
+          ) : priceOptions ? (
+            <div className="text-sm font-semibold text-olive">
+              {priceOptions.map((o) => (
+                <p key={o.label}>
+                  {o.label} starts at ₱{o.price.toLocaleString()}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm font-semibold text-olive">₱{price.toLocaleString()}/person</p>
+          )}
           <ul className="ml-4 list-disc text-xs leading-relaxed text-muted">
             {inclusions.map((i) => (
               <li key={i}>{i}</li>

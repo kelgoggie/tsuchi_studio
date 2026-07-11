@@ -51,10 +51,24 @@ export default async function BookPage({
                     <Image src={workshop.image} alt={workshop.label} fill sizes="(min-width:768px) 50vw, 100vw" className="object-cover" />
                   </div>
                   <h1 className="mt-4 font-script text-3xl leading-tight md:text-4xl">{workshop.titleScript}</h1>
-                  <p className="text-xs text-muted">
-                    max. {capacityFor(caps, workshop.workshopId)} people per timeslot
-                  </p>
-                  <p className="mt-2 text-xl font-semibold text-olive">₱{workshop.price.toLocaleString()}/person</p>
+                  {capacityFor(caps, workshop.workshopId) < 1000 && (
+                    <p className="text-xs text-muted">
+                      max. {capacityFor(caps, workshop.workshopId)} people per timeslot
+                    </p>
+                  )}
+                  {workshop.priceNote ? (
+                    <p className="mt-2 text-lg font-semibold text-olive">{workshop.priceNote}</p>
+                  ) : workshop.priceOptions ? (
+                    <div className="mt-2 text-lg font-semibold text-olive">
+                      {workshop.priceOptions.map((o) => (
+                        <p key={o.label}>
+                          {o.label} starts at ₱{o.price.toLocaleString()}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xl font-semibold text-olive">₱{workshop.price.toLocaleString()}/person</p>
+                  )}
                   <p className="mt-2 text-sm italic leading-relaxed text-muted">{workshop.description}</p>
 
                   <div className="mt-4 text-sm">
@@ -75,6 +89,14 @@ export default async function BookPage({
                       </div>
                     )}
                   </div>
+
+                  {workshop.bookingNotes && (
+                    <div className="mt-5 space-y-2 border-t border-divider pt-4 text-xs leading-relaxed text-muted">
+                      {workshop.bookingNotes.map((n, i) => (
+                        <p key={i}>{n}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* form */}
@@ -85,6 +107,7 @@ export default async function BookPage({
                     capacity={capacityFor(caps, workshop.workshopId)}
                     workshopLabel={workshop.label}
                     price={workshop.price}
+                    bookingFee={workshop.bookingFee}
                     addon={workshop.addon ? { price: workshop.addon.price, label: workshop.addon.label } : undefined}
                   />
                 </div>

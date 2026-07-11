@@ -2,7 +2,7 @@ import Link from "next/link"
 import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
-import WorkshopCard from "@/components/WorkshopCard"
+import WorkshopGrid from "@/components/WorkshopGrid"
 import { WORKSHOPS } from "@/lib/workshops"
 import { capacityFor, getCapacities } from "@/lib/booking"
 
@@ -24,11 +24,9 @@ export default async function WorkshopsPage() {
             Pick a class to see the details and book a session.
           </p>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {WORKSHOPS.map((w) => (
-              <WorkshopCard key={w.slug} workshop={w} capacity={capacityFor(caps, w.workshopId)} />
-            ))}
-          </div>
+          <WorkshopGrid
+            items={WORKSHOPS.map((w) => ({ workshop: w, capacity: capacityFor(caps, w.workshopId) }))}
+          />
 
           {/* contact CTA */}
           <p className="mx-auto mt-12 max-w-xl text-center text-sm leading-relaxed text-muted">
