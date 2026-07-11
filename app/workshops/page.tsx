@@ -29,17 +29,6 @@ export default async function WorkshopsPage() {
             items={WORKSHOPS.map((w) => ({ workshop: w, capacity: capacityFor(caps, w.workshopId) }))}
           />
 
-          {/* contact CTA */}
-          <p className="mx-auto mt-12 max-w-xl text-center text-sm leading-relaxed text-muted">
-            Interested in booking a commission, a corporate workshop or a private event?{" "}
-            <Link
-              href="#contact"
-              className="font-medium text-olive underline underline-offset-2 transition hover:opacity-70"
-            >
-              Contact us
-            </Link>{" "}
-            for more details.
-          </p>
         </main>
 
         <ContactSection />

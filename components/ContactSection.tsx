@@ -20,7 +20,7 @@ const LINKS = [
   },
   {
     label: "Facebook",
-    href: "https://facebook.com/tsuchi.studio",
+    href: "https://facebook.com/profile.php?id=61591392980721",
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" {...STROKE}>
         <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />

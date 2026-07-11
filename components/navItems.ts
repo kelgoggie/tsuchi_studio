@@ -8,7 +8,6 @@ export const navGroups: NavItem[][] = [
   ],
   [
     { href: "/workshops", label: "workshops", icon: "navbar_workshops" },
-    { href: "#contact", label: "get in touch", icon: "navbar_touch" },
   ],
 ]
 
