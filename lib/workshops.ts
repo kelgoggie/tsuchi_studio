@@ -95,7 +95,7 @@ export const WORKSHOPS: WorkshopOffering[] = [
     workshopId: "ceramic-painting",
     label: "Ceramic Painting",
     titleScript: "ceramic painting",
-    image: "/images/carousel-6.JPG",
+    image: "/images/ceramic-painting.jpg",
     price: 500,
     priceNote: "Pieces start at ₱500",
     bookingFee: 250,

@@ -65,7 +65,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
               <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops" />
               <WorkshopCard img="/images/rug-tugting-01.JPG" label="Rug-tufting" href="/workshops" />
-              <WorkshopCard img="/images/carousel-6.JPG" label="Ceramic Painting" href="/workshops" />
+              <WorkshopCard img="/images/ceramic-painting.jpg" label="Ceramic Painting" href="/workshops" />
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>
@@ -76,13 +76,6 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* heading */}
-          <section>
-            <h2 className="mb-6 font-script text-3xl leading-tight md:text-4xl">crafted with love, perfect for gifts</h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-muted">
-              Tsuchi studio's creations are hand-built with love, and are always in search for their forever home.
-            </p>
-          </section>
         </main>
 
         <ContactSection />

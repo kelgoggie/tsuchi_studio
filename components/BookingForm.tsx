@@ -118,10 +118,14 @@ export default function BookingForm({
       .filter(Boolean)
       .join(" ")
 
+    // amounts for the sheet: 50/50 split, or a flat booking fee (ceramic → remaining is manual)
+    const feeAmount = payNow
+    const remaining = bookingFee ? "" : subtotal - deposit
+
     const res = await fetch("/api/book", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, date: dateStr, period, partySize, notes, workshopId }),
+      body: JSON.stringify({ ...data, date: dateStr, period, partySize, notes, workshopId, workshopLabel, feeAmount, remaining }),
     })
     const json = await res.json().catch(() => ({}))
 

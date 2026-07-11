@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { bookingWindow, createBooking, isClosed, isOpenDay, parseDateOnly, PERIODS } from "@/lib/booking"
+import { bookingWindow, createBooking, isClosed, isOpenDay, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
 import { forwardToSheet } from "@/lib/sheets"
 import type { Period } from "@/app/generated/prisma/client"
 
@@ -54,18 +54,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: 409 })
   }
 
+  const feeAmount = Number(body.feeAmount) || 0
+  const remaining = body.remaining === "" || body.remaining == null ? "" : Number(body.remaining)
+  const workshopLabel = String(body.workshopLabel ?? workshopId)
+  const day = date.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+
   await forwardToSheet({
-    id: result.id,
-    workshop: workshopId,
-    date: dateStr,
-    session: period,
-    partySize,
+    bookedOn: new Date().toISOString(),
     name,
-    email,
+    id: result.id,
+    workshop: workshopLabel,
+    date: dateStr,
+    day,
+    session: PERIOD_LABELS[period],
+    slots: partySize,
     phone: phone ?? "",
+    email,
     instagram: instagram ?? "",
-    notes: notes ?? "",
-    submittedAt: new Date().toISOString(),
+    bookingFee: feeAmount,
+    remaining,
+    bookingStatus: "UNPAID",
   })
 
   return NextResponse.json({ ok: true, id: result.id })
