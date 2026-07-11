@@ -69,6 +69,27 @@ export const WORKSHOPS: WorkshopOffering[] = [
     addon: CERAMIC_ADDON,
   },
   {
+    slug: "ceramic-painting",
+    workshopId: "ceramic-painting",
+    label: "Ceramic Painting",
+    titleScript: "ceramic painting",
+    image: "/images/ceramic-painting.JPG",
+    price: 500,
+    priceNote: "Pieces start at ₱500",
+    bookingFee: 250,
+    description: "Paint and personalize a ready-to-paint ceramic piece.",
+    inclusions: [
+      "Underglaze paints",
+      "Clear glaze finish or glaze combinations",
+      "All materials, glazing & firing included",
+    ],
+    bookingNotes: [
+      "Choose from a curated selection of ready-to-paint ceramic pieces available at the studio, with prices starting at ₱500. Pieces range from small to large, allowing you to choose one that suits your style.",
+      "A ₱250 booking fee is required to reserve your slot. The booking fee will be deducted from your total workshop fee. You may decorate your piece using underglaze with a clear glaze finish for a smooth, glossy surface that highlights your design, or choose from our selection of glaze combinations for a more expressive, layered finish.",
+      "All materials, glazing, and firing are included.",
+    ],
+  },
+  {
     slug: "medium-rug-tufting",
     workshopId: "rug-tufting",
     label: "Medium Rug Tufting",
@@ -89,27 +110,6 @@ export const WORKSHOPS: WorkshopOffering[] = [
     description: "Perfect for larger and more detailed designs.",
     inclusions: ["3-hour session", "60 × 60 cm frame", ...TUFTING_INCLUSIONS_BASE],
     bookingNotes: TUFTING_NOTES,
-  },
-  {
-    slug: "ceramic-painting",
-    workshopId: "ceramic-painting",
-    label: "Ceramic Painting",
-    titleScript: "ceramic painting",
-    image: "/images/ceramic-painting.JPG",
-    price: 500,
-    priceNote: "Pieces start at ₱500",
-    bookingFee: 250,
-    description: "Paint and personalize a ready-to-paint ceramic piece.",
-    inclusions: [
-      "Underglaze paints",
-      "Clear glaze finish or glaze combinations",
-      "All materials, glazing & firing included",
-    ],
-    bookingNotes: [
-      "Choose from a curated selection of ready-to-paint ceramic pieces available at the studio, with prices starting at ₱500. Pieces range from small to large, allowing you to choose one that suits your style.",
-      "A ₱250 booking fee is required to reserve your slot. The booking fee will be deducted from your total workshop fee. You may decorate your piece using underglaze with a clear glaze finish for a smooth, glossy surface that highlights your design, or choose from our selection of glaze combinations for a more expressive, layered finish.",
-      "All materials, glazing, and firing are included.",
-    ],
   },
 ]
 
