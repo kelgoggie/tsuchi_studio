@@ -65,7 +65,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
               <WorkshopCard img="/images/carousel-1.JPG" label="Pottery" href="/workshops" />
               <WorkshopCard img="/images/rug-tugting-01.JPG" label="Rug-tufting" href="/workshops" />
-              <WorkshopCard img="/images/ceramic-painting.jpg" label="Ceramic Painting" href="/workshops" />
+              <WorkshopCard img="/images/ceramic-painting.JPG" label="Ceramic Painting" href="/workshops" />
             </div>
             <div className="order-first flex flex-col items-start gap-5 md:order-none md:gap-6 md:pl-6">
               <h2 className="font-script text-3xl leading-none md:text-4xl">studio workshops</h2>
