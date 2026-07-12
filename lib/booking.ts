@@ -9,7 +9,11 @@ export const PERIOD_LABELS: Record<Period, string> = {
   EVENING: "Evening · 4:00–7:00",
 }
 
-const ACTIVE = [BookingStatus.PENDING, BookingStatus.CONFIRMED]
+/**
+ * Only confirmed bookings take up a seat — an unpaid (PENDING) booking doesn't
+ * hold one, so seats stay open until the admin confirms payment.
+ */
+export const SEAT_HOLDING = [BookingStatus.CONFIRMED]
 
 /** Parse a "YYYY-MM-DD" string into a UTC date-only Date (matches @db.Date). */
 export function parseDateOnly(s: string): Date | null {
@@ -60,6 +64,7 @@ const DEFAULT_CAPACITY: Record<string, number> = {
   handbuilding: 8,
   "wheel-throwing": 2,
   "rug-tufting": 2,
+  "ceramic-painting": 6,
 }
 
 /** Map of workshopId -> capacity, falling back to defaults if the DB is down. */
@@ -85,13 +90,13 @@ export async function isClosed(date: Date, period: Period): Promise<boolean> {
   return Boolean(c)
 }
 
-/** Seats still available: capacity minus active bookings minus admin-blocked slots. */
+/** Seats still available: capacity minus confirmed bookings minus admin-blocked slots. */
 export async function remainingSeats(workshopId: string, date: Date, period: Period): Promise<number> {
   const workshop = await prisma.workshop.findUnique({ where: { id: workshopId } })
   if (!workshop || !workshop.active) return 0
   const [agg, blocked] = await Promise.all([
     prisma.booking.aggregate({
-      where: { workshopId, date, period, status: { in: ACTIVE } },
+      where: { workshopId, date, period, status: { in: SEAT_HOLDING } },
       _sum: { partySize: true },
     }),
     prisma.slotBlock.aggregate({ where: { workshopId, date, period }, _sum: { slots: true } }),
@@ -127,7 +132,7 @@ export async function createBooking(
 
     const [agg, blocked] = await Promise.all([
       tx.booking.aggregate({
-        where: { workshopId: input.workshopId, date: input.date, period: input.period, status: { in: ACTIVE } },
+        where: { workshopId: input.workshopId, date: input.date, period: input.period, status: { in: SEAT_HOLDING } },
         _sum: { partySize: true },
       }),
       tx.slotBlock.aggregate({

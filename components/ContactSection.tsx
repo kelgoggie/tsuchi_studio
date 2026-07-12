@@ -6,7 +6,7 @@ const STROKE = {
   strokeLinejoin: "round" as const,
 }
 
-const EMAIL = "ma.threshiageonigo@gmail.com"
+const EMAIL = "studiotsuchi76@gmail.com"
 
 const LINKS = [
   {

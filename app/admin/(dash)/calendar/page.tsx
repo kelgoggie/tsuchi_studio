@@ -1,14 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { PERIOD_LABELS } from "@/lib/booking"
 import ClosureCalendar from "@/components/admin/ClosureCalendar"
-import { blockSlots, removeSlotBlock } from "@/app/admin/actions"
+import BlockSlotsForm from "@/components/admin/BlockSlotsForm"
+import { removeSlotBlock } from "@/app/admin/actions"
 
 export const dynamic = "force-dynamic"
-
-const FIELD =
-  "w-full rounded-lg border border-divider bg-paper px-3 py-2.5 text-sm outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/15"
-const SELECT = `${FIELD} field-select cursor-pointer`
-const LABEL = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted"
 
 function fmtDate(d: Date) {
   return d.toLocaleDateString("en-US", {
@@ -53,57 +49,8 @@ export default async function AdminCalendarPage() {
 
         {/* hold back individual slots */}
         <section className="rounded-2xl border border-divider bg-card p-6">
-          <h2 className="text-lg font-semibold tracking-tight">Block slots</h2>
-
-          <form action={blockSlots} className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-            <label className="block">
-              <span className={LABEL}>Workshop</span>
-              <select name="workshopId" required defaultValue="" className={SELECT}>
-                <option value="" disabled>
-                  Choose a workshop…
-                </option>
-                {workshops.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name} (max {w.capacity})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className={LABEL}>Session</span>
-              <select name="period" required defaultValue="" className={SELECT}>
-                <option value="" disabled>
-                  Choose a session…
-                </option>
-                <option value="MORNING">Morning · 9:00–12:00</option>
-                <option value="AFTERNOON">Afternoon · 1:00–4:00</option>
-                <option value="EVENING">Evening · 4:00–7:00</option>
-              </select>
-            </label>
-
-            <div className="grid grid-cols-[1fr_auto] gap-4">
-              <label className="block">
-                <span className={LABEL}>Date</span>
-                <input name="date" type="date" required className={FIELD} />
-              </label>
-              <label className="block w-24">
-                <span className={LABEL}>Slots</span>
-                <input name="slots" type="number" min={1} defaultValue={1} className={FIELD} />
-              </label>
-            </div>
-
-            <label className="block">
-              <span className={LABEL}>Reason</span>
-              <input name="reason" placeholder="Optional" className={FIELD} />
-            </label>
-
-            <div className="sm:col-span-2 flex justify-end">
-              <button className="rounded-full bg-olive px-7 py-2.5 text-sm text-cream transition hover:opacity-90">
-                Block slots
-              </button>
-            </div>
-          </form>
+          <h2 className="mb-4 text-lg font-semibold tracking-tight">Block slots</h2>
+          <BlockSlotsForm workshops={workshops} />
         </section>
       </div>
 

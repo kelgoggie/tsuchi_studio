@@ -70,12 +70,12 @@ export default function Footer() {
             </a>
           </li>
           <li>
-            <a href="mailto:ma.threshiageonigo@gmail.com" className="flex items-center gap-3 transition hover:text-white">
+            <a href="mailto:studiotsuchi76@gmail.com" className="flex items-center gap-3 transition hover:text-white">
               <Icon>
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path d="m3 7 9 6 9-6" />
               </Icon>
-              ma.threshiageonigo@gmail.com
+              studiotsuchi76@gmail.com
             </a>
           </li>
         </ul>

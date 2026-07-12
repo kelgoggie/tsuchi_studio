@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { isAdmin } from "@/lib/auth"
 import { forwardToSheet } from "@/lib/sheets"
 import { createBooking, isMonday, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
+import { ALL_WORKSHOPS } from "@/lib/constants"
 import { BookingStatus, type Period } from "@/app/generated/prisma/client"
 
 // How each booking status shows up in the Google Sheet's single status column.
@@ -67,7 +68,11 @@ export async function toggleOpening(dateStr: string) {
   revalidatePath("/admin/calendar")
 }
 
-/** Hold back N slots for one workshop/date/session (without a real booking). */
+/**
+ * Hold back N slots for a date/session (without a real booking). `workshopId`
+ * may be ALL_WORKSHOPS, which blocks the session across every active workshop —
+ * each one capped at its own capacity, since capacities differ.
+ */
 export async function blockSlots(formData: FormData) {
   if (!(await isAdmin())) throw new Error("Unauthorized")
   const workshopId = String(formData.get("workshopId") ?? "")
@@ -79,7 +84,25 @@ export async function blockSlots(formData: FormData) {
   const date = parseDateOnly(dateStr)
   if (!workshopId || !date || !(PERIODS as readonly string[]).includes(period)) return
 
-  await prisma.slotBlock.create({ data: { workshopId, date, period, slots, reason } })
+  if (workshopId === ALL_WORKSHOPS) {
+    const workshops = await prisma.workshop.findMany({
+      where: { active: true },
+      select: { id: true, capacity: true },
+    })
+    const ids = workshops.map((w) => w.id)
+
+    // Closing the session outright: every seat of every workshop. Existing holds
+    // for this session are replaced, since a full block supersedes them.
+    await prisma.$transaction([
+      prisma.slotBlock.deleteMany({ where: { workshopId: { in: ids }, date, period } }),
+      prisma.slotBlock.createMany({
+        data: workshops.map((w) => ({ workshopId: w.id, date, period, slots: w.capacity, reason })),
+      }),
+    ])
+  } else {
+    await prisma.slotBlock.create({ data: { workshopId, date, period, slots, reason } })
+  }
+
   revalidatePath("/admin/calendar")
 }
 

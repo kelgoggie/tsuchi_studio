@@ -103,6 +103,10 @@ export default function BookingForm({
   const maxParty = unlimited ? 50 : cap
   const remainingFor = (p: string) => (dateStr ? cap - (avail.booked[dateStr]?.[p] ?? 0) : cap)
 
+  // Once a session is picked, the party size is capped by *that session's* seats.
+  const slotsLeft = period ? remainingFor(period) : maxParty
+  const overCapacity = !unlimited && partySize > slotsLeft
+
   function selectDate(s: string) {
     setDateStr(s)
     setPeriod(null) // re-pick the session for the new date
@@ -241,17 +245,36 @@ export default function BookingForm({
         </div>
       )}
 
-      <label className="flex items-center justify-between gap-3 text-sm text-muted">
-        <span>Number of people{unlimited ? "" : ` (up to ${cap})`}</span>
-        <input
-          type="number"
-          min={1}
-          max={maxParty}
-          value={partySize}
-          onChange={(e) => setPartySize(Math.max(1, Math.min(maxParty, Number(e.target.value) || 1)))}
-          className="w-20 rounded-lg border border-divider bg-paper px-3 py-2 text-sm outline-none focus:border-olive"
-        />
-      </label>
+      <div>
+        <label className="flex items-center justify-between gap-3 text-sm text-muted">
+          <span>
+            Number of people
+            {unlimited ? "" : period ? ` (${slotsLeft} left this session)` : ` (up to ${cap})`}
+          </span>
+          <input
+            type="number"
+            min={1}
+            max={unlimited ? maxParty : slotsLeft}
+            value={partySize}
+            // Don't silently clamp — let them overshoot so we can say why it's too many.
+            onChange={(e) => setPartySize(Math.max(1, Number(e.target.value) || 1))}
+            aria-invalid={overCapacity}
+            className={`w-20 rounded-lg border bg-paper px-3 py-2 text-sm outline-none transition ${
+              overCapacity ? "border-red-500 text-red-600 focus:border-red-500" : "border-divider focus:border-olive"
+            }`}
+          />
+        </label>
+
+        {overCapacity && (
+          <p className="mt-1.5 text-right text-xs text-red-600">
+            {!period
+              ? `Only ${cap} people fit in a session.`
+              : slotsLeft <= 0
+                ? "That session is full — please pick another."
+                : `Only ${slotsLeft} slot${slotsLeft === 1 ? "" : "s"} left for this session.`}
+          </p>
+        )}
+      </div>
 
       {addon && (
         <label className="flex items-start gap-2 rounded-lg border border-divider bg-paper p-3 text-sm">
@@ -299,8 +322,8 @@ export default function BookingForm({
 
       <button
         type="submit"
-        disabled={status === "loading"}
-        className="mt-auto rounded-full bg-olive px-6 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:opacity-60"
+        disabled={status === "loading" || overCapacity}
+        className="mt-auto rounded-full bg-olive px-6 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "loading" ? "Sending…" : "Request booking"}
       </button>

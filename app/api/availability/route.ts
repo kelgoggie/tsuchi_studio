@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { bookingWindow } from "@/lib/booking"
-import { BookingStatus } from "@/app/generated/prisma/client"
+import { bookingWindow, SEAT_HOLDING } from "@/lib/booking"
 
 export const dynamic = "force-dynamic"
 
 // Returns the workshop's capacity and, for the next 2 months, how many seats
-// are already taken per date + session (PENDING + CONFIRMED count).
+// are already taken per date + session (only CONFIRMED bookings count).
 export async function GET(req: Request) {
   const workshopId = new URL(req.url).searchParams.get("w") ?? ""
   if (!workshopId) return NextResponse.json({ error: "Missing workshop." }, { status: 400 })
@@ -19,7 +18,7 @@ export async function GET(req: Request) {
         by: ["date", "period"],
         where: {
           workshopId,
-          status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
+          status: { in: SEAT_HOLDING }, // unpaid bookings don't hold a seat
           date: { gte: min, lte: max },
         },
         _sum: { partySize: true },
