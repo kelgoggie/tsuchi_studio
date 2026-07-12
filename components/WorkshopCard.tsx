@@ -70,7 +70,7 @@ export default function WorkshopCard({
             </svg>
           </button>
 
-          <h3 className="pr-6 font-script text-2xl leading-tight">{titleScript}</h3>
+          <h3 className="pr-6 font-script text-2xl text-paper leading-tight">{titleScript}</h3>
           {priceNote ? (
             <p className="text-sm font-semibold text-olive">{priceNote}</p>
           ) : priceOptions ? (

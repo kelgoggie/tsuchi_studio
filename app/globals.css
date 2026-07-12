@@ -92,6 +92,15 @@ body {
   }
 }
 
+/* Admin selects: drop the native arrow (it ignores our palette) and draw our own. */
+.field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b675c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.4rem;
+}
+
 /* Procedural watercolor-paper texture: a fine SVG grain for the paper "tooth",
    layered over a couple of soft tonal washes for subtle mottling. */
 .paper-bg {

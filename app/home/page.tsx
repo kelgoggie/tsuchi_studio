@@ -49,13 +49,13 @@ export default function HomePage() {
 
           {/* about us */}
           <section>
-            <h2 className="mt-10 mb-5 font-script text-3xl leading-tight md:text-5xl">about us</h2>
+            <h2 className="mt-10 mb-5 font-script text-3xl border-t border-divider px-4 py-8 leading-tight md:text-5xl">about us</h2>
             <div className="max-w-xl space-y-3 text-sm leading-relaxed text-muted">
               <p>
                 Tsuchi is an independent multidisciplinary arts studio <b>rooted in nature</b>.
               </p>
               <p>
-                Perfection is not the pursuit, but connection. A quiet reverence for what is slightly off, slightly worn, and deeply felt. Tsuchi invites a deeper appreciation for the objects that live alongside us.
+                Perfection is not the pursuit, but connection. A quiet reverence for what is <b>slightly off, slightly worn, and deeply felt </b>. <p>Tsuchi invites a deeper appreciation for the objects that live alongside us.</p>
               </p>
             </div>
           </section>

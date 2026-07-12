@@ -13,7 +13,7 @@ const SESSIONS = ["MORNING", "AFTERNOON", "EVENING"] as const
 const SESSION_LABELS: Record<string, string> = {
   MORNING: "Morning · 9:00–12:00",
   AFTERNOON: "Afternoon · 1:00–4:00",
-  EVENING: "Evening · 4:00–8:00",
+  EVENING: "Evening · 4:00–7:00",
 }
 
 function IconField({
@@ -63,7 +63,17 @@ export default function BookingForm({
   const [period, setPeriod] = useState<string | null>(null)
   const [partySize, setPartySize] = useState(1)
   const [addonChecked, setAddonChecked] = useState(false)
-  const [avail, setAvail] = useState<{ capacity: number; booked: Booked }>({ capacity, booked: {} })
+  const [avail, setAvail] = useState<{
+    capacity: number
+    booked: Booked
+    closedDates: string[]
+    openDates: string[]
+  }>({
+    capacity,
+    booked: {},
+    closedDates: [],
+    openDates: [],
+  })
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [message, setMessage] = useState("")
 
@@ -72,7 +82,12 @@ export default function BookingForm({
       const res = await fetch(`/api/availability?w=${encodeURIComponent(workshopId)}`)
       const d = await res.json()
       if (d && typeof d.capacity === "number") {
-        setAvail({ capacity: d.capacity || capacity, booked: d.booked ?? {} })
+        setAvail({
+          capacity: d.capacity || capacity,
+          booked: d.booked ?? {},
+          closedDates: d.closedDates ?? [],
+          openDates: d.openDates ?? [],
+        })
       }
     } catch {
       /* keep showing everything as available; the server still enforces capacity */
@@ -143,7 +158,7 @@ export default function BookingForm({
   if (status === "success") {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-paper px-4 py-10">
-        <div className="w-full max-w-lg text-center">
+        <div className="w-full max-w-2xl text-center">
           <h2 className="font-script text-4xl leading-tight md:text-5xl">one last thing!</h2>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted">
             Pay your {peso(payNow)} {bookingFee ? "booking fee" : "deposit"} via GCash or bank transfer to reserve your slot.
@@ -159,7 +174,7 @@ export default function BookingForm({
                 <img
                   src={q.src}
                   alt={`${q.label} QR code`}
-                  className="h-44 w-44 rounded-xl border border-divider bg-white object-contain p-2"
+                  className="h-64 w-64 rounded-xl border border-divider object-contain p-2"
                 />
                 <p className="mt-2 text-sm font-medium">{q.label}</p>
               </div>
@@ -192,7 +207,14 @@ export default function BookingForm({
 
       <div>
         <p className="mb-1 text-sm text-muted">Choose a date (closed Mondays)</p>
-        <BookingCalendar capacity={cap} booked={avail.booked} selected={dateStr} onSelect={selectDate} />
+        <BookingCalendar
+          capacity={cap}
+          booked={avail.booked}
+          closedDates={avail.closedDates}
+          openDates={avail.openDates}
+          selected={dateStr}
+          onSelect={selectDate}
+        />
       </div>
 
       {dateStr && (

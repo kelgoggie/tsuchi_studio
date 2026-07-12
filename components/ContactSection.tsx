@@ -6,9 +6,12 @@ const STROKE = {
   strokeLinejoin: "round" as const,
 }
 
+const EMAIL = "ma.threshiageonigo@gmail.com"
+
 const LINKS = [
   {
     label: "Instagram",
+    tooltip: "tsuchi.studio on Instagram",
     href: "https://instagram.com/tsuchi.studio",
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" {...STROKE}>
@@ -20,6 +23,7 @@ const LINKS = [
   },
   {
     label: "Facebook",
+    tooltip: "Tsuchi Studio on Facebook",
     href: "https://facebook.com/profile.php?id=61591392980721",
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" {...STROKE}>
@@ -29,7 +33,9 @@ const LINKS = [
   },
   {
     label: "Email",
-    href: "mailto:ma.threshiageonigo@gmail.com",
+    tooltip: EMAIL,
+    // opens a Gmail compose tab with the studio address prefilled
+    href: `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}`,
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" {...STROKE}>
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -39,6 +45,7 @@ const LINKS = [
   },
   {
     label: "Phone",
+    tooltip: "+63 939 263 3855",
     href: "tel:+639392633855",
     icon: (
       <svg width="26" height="26" viewBox="0 0 24 24" {...STROKE}>
@@ -56,7 +63,7 @@ export default function ContactSection() {
         Got any questions or inquiries? We&apos;d love to hear from you.
       </p>
 
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-5 sm:gap-6">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-5 pb-10 sm:gap-6">
         {LINKS.map((l) => (
           <a
             key={l.label}
@@ -64,9 +71,12 @@ export default function ContactSection() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={l.label}
-            className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-olive text-olive transition hover:bg-olive hover:text-cream"
+            className="group relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-olive text-olive transition hover:bg-olive hover:text-cream"
           >
             {l.icon}
+            <span className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs text-cream opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              {l.tooltip}
+            </span>
           </a>
         ))}
       </div>

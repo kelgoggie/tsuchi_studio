@@ -13,7 +13,7 @@ datasource db {
 enum Period {
   MORNING // 9:00–12:00
   AFTERNOON // 1:00–4:00
-  EVENING // 4:00–8:00
+  EVENING // 4:00–7:00
 }
 
 enum BookingStatus {
@@ -24,33 +24,51 @@ enum BookingStatus {
 
 // A workshop type and its per-session capacity rule.
 model Workshop {
-  id          String    @id @default(cuid())
-  slug        String    @unique // "wheel-throwing"
+  id          String      @id @default(cuid())
+  slug        String      @unique // "wheel-throwing"
   name        String
   description String?
-  durationMin Int       @default(180)
+  durationMin Int         @default(180)
   capacity    Int // max participants per session
-  active      Boolean   @default(true)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
+  active      Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
   bookings    Booking[]
+  slotBlocks  SlotBlock[]
 }
 
 // A customer's booking for a workshop on a specific date + session.
 model Booking {
-  id         String        @id @default(cuid())
-  workshop   Workshop      @relation(fields: [workshopId], references: [id])
+  id           String        @id @default(cuid())
+  workshop     Workshop      @relation(fields: [workshopId], references: [id])
+  workshopId   String
+  date         DateTime      @db.Date
+  period       Period
+  partySize    Int           @default(1)
+  name         String
+  email        String
+  phone        String?
+  instagram    String?
+  notes        String?
+  bookingFee   Int? // amount paid to reserve (50% deposit, or flat fee)
+  remainingFee Int? // balance owed; null when set manually (e.g. ceramic painting)
+  status       BookingStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+
+  @@index([date, period, workshopId])
+}
+
+// Slots the studio holds back for a specific workshop/date/session, without a
+// real customer booking. Availability subtracts these from capacity.
+model SlotBlock {
+  id         String   @id @default(cuid())
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
   workshopId String
-  date       DateTime      @db.Date
+  date       DateTime @db.Date
   period     Period
-  partySize  Int           @default(1)
-  name       String
-  email      String
-  phone      String?
-  instagram  String?
-  notes      String?
-  status     BookingStatus @default(PENDING)
-  createdAt  DateTime      @default(now())
+  slots      Int
+  reason     String?
+  createdAt  DateTime @default(now())
 
   @@index([date, period, workshopId])
 }
@@ -63,6 +81,13 @@ model Closure {
   reason String?
 
   @@unique([date, period])
+}
+
+// Overrides the default "closed on Mondays" rule — the studio IS open this day.
+model Opening {
+  id     String   @id @default(cuid())
+  date   DateTime @unique @db.Date
+  reason String?
 }
 
 // Shop items, managed from the admin.

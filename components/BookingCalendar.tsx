@@ -12,14 +12,21 @@ const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 export default function BookingCalendar({
   capacity,
   booked,
+  closedDates = [],
+  openDates = [],
   selected,
   onSelect,
 }: {
   capacity: number
   booked: Booked
+  closedDates?: string[]
+  /** Mondays the studio has opened (Mondays are otherwise closed). */
+  openDates?: string[]
   selected: string | null
   onSelect: (date: string) => void
 }) {
+  const closed = new Set(closedDates)
+  const opened = new Set(openDates)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const max = new Date(today)
@@ -81,8 +88,10 @@ export default function BookingCalendar({
           if (day === null) return <div key={i} />
           const date = new Date(year, month, day)
           const s = toStr(date)
-          // closed Mondays, past dates, beyond the 2-month window, or fully booked
-          const disabled = date < today || date > max || date.getDay() === 1 || dayFull(s)
+          // Mondays are closed unless the studio opened that one
+          const mondayClosed = date.getDay() === 1 && !opened.has(s)
+          // past dates, beyond the window, closed Mondays, blocked-off days, or fully booked
+          const disabled = date < today || date > max || mondayClosed || closed.has(s) || dayFull(s)
           const isSel = selected === s
           const isToday = s === toStr(today)
           return (

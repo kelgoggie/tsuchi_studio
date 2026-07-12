@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { bookingWindow, createBooking, isClosed, isOpenDay, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
+import { bookingWindow, createBooking, isClosed, isDayOpen, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
 import { forwardToSheet } from "@/lib/sheets"
 import type { Period } from "@/app/generated/prisma/client"
 
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   if (!date) {
     return NextResponse.json({ error: "Please choose a valid date." }, { status: 400 })
   }
-  if (!isOpenDay(date)) {
+  if (!(await isDayOpen(date))) {
     return NextResponse.json({ error: "The studio is closed on Mondays." }, { status: 400 })
   }
   const { min, max } = bookingWindow()
@@ -49,15 +49,27 @@ export async function POST(req: Request) {
   const instagram = body.instagram ? String(body.instagram).trim() : undefined
   const notes = body.notes ? String(body.notes).trim() : undefined
 
-  const result = await createBooking({ workshopId, date, period, partySize, name, email, phone, instagram, notes })
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 409 })
-  }
-
   const feeAmount = Number(body.feeAmount) || 0
   const remaining = body.remaining === "" || body.remaining == null ? "" : Number(body.remaining)
   const workshopLabel = String(body.workshopLabel ?? workshopId)
   const day = date.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+
+  const result = await createBooking({
+    workshopId,
+    date,
+    period,
+    partySize,
+    name,
+    email,
+    phone,
+    instagram,
+    notes,
+    bookingFee: feeAmount || null,
+    remainingFee: remaining === "" ? null : remaining,
+  })
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 409 })
+  }
 
   await forwardToSheet({
     bookedOn: new Date().toISOString(),
