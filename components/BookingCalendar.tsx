@@ -14,6 +14,8 @@ export default function BookingCalendar({
   booked,
   closedDates = [],
   openDates = [],
+  minSlots = 1,
+  allowPast = false,
   selected,
   onSelect,
 }: {
@@ -22,6 +24,10 @@ export default function BookingCalendar({
   closedDates?: string[]
   /** Mondays the studio has opened (Mondays are otherwise closed). */
   openDates?: string[]
+  /** Seats the booking needs — a day is only offered if a session can fit them all. */
+  minSlots?: number
+  /** Admin edits may land on a date that has already passed. */
+  allowPast?: boolean
   selected: string | null
   onSelect: (date: string) => void
 }) {
@@ -34,8 +40,8 @@ export default function BookingCalendar({
 
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
 
-  // a day is full when every session is at capacity for this class
-  const dayFull = (s: string) => SESSIONS.every((p) => capacity - (booked[s]?.[p] ?? 0) <= 0)
+  // Unavailable when no session on that day can still seat the whole party.
+  const dayFull = (s: string) => SESSIONS.every((p) => capacity - (booked[s]?.[p] ?? 0) < minSlots)
 
   const year = view.getFullYear()
   const month = view.getMonth()
@@ -43,8 +49,8 @@ export default function BookingCalendar({
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   const monthStart = new Date(year, month, 1)
-  const canPrev = monthStart > new Date(today.getFullYear(), today.getMonth(), 1)
-  const canNext = monthStart < new Date(max.getFullYear(), max.getMonth(), 1)
+  const canPrev = allowPast || monthStart > new Date(today.getFullYear(), today.getMonth(), 1)
+  const canNext = allowPast || monthStart < new Date(max.getFullYear(), max.getMonth(), 1)
 
   const cells: (number | null)[] = [
     ...Array(startPad).fill(null),
@@ -90,8 +96,9 @@ export default function BookingCalendar({
           const s = toStr(date)
           // Mondays are closed unless the studio opened that one
           const mondayClosed = date.getDay() === 1 && !opened.has(s)
-          // past dates, beyond the window, closed Mondays, blocked-off days, or fully booked
-          const disabled = date < today || date > max || mondayClosed || closed.has(s) || dayFull(s)
+          const outOfWindow = allowPast ? false : date < today || date > max
+          // out of window, closed Mondays, blocked-off days, or can't seat the party
+          const disabled = outOfWindow || mondayClosed || closed.has(s) || dayFull(s)
           const isSel = selected === s
           const isToday = s === toStr(today)
           return (

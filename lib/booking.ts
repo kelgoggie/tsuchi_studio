@@ -63,7 +63,7 @@ export function maxBookingDateStr(): string {
 const DEFAULT_CAPACITY: Record<string, number> = {
   handbuilding: 8,
   "wheel-throwing": 2,
-  "rug-tufting": 2,
+  "rug-tufting": 1, // only one tufting gun, so only one session at a time
   "ceramic-painting": 6,
 }
 

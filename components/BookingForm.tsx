@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import BookingCalendar, { type Booked } from "./BookingCalendar"
+import { DOWN_PAYMENT_NOTICE } from "@/lib/constants"
 
 const FIELD =
   "w-full rounded-lg border border-divider bg-paper px-3 py-2 text-sm outline-none focus:border-olive"
@@ -16,17 +17,28 @@ const SESSION_LABELS: Record<string, string> = {
   EVENING: "Evening · 4:00–7:00",
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
+// PH mobile/landline, tolerating spaces, dashes and +63: 09xx…, +639xx…, (033) …
+const PHONE_RE = /^(\+?63|0)[\d\s-]{9,13}$/
+
 function IconField({
   icon,
+  error,
   ...props
-}: { icon: React.ReactNode } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: { icon: React.ReactNode; error?: string | null } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">{icon}</span>
-      <input
-        {...props}
-        className="w-full rounded-lg border border-divider bg-paper py-2 pl-9 pr-3 text-sm outline-none focus:border-olive"
-      />
+    <div>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">{icon}</span>
+        <input
+          {...props}
+          aria-invalid={Boolean(error)}
+          className={`w-full rounded-lg border bg-paper py-2 pl-9 pr-3 text-sm outline-none transition ${
+            error ? "border-red-500 focus:border-red-500" : "border-divider focus:border-olive"
+          }`}
+        />
+      </div>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   )
 }
@@ -63,6 +75,10 @@ export default function BookingForm({
   const [period, setPeriod] = useState<string | null>(null)
   const [partySize, setPartySize] = useState(1)
   const [addonChecked, setAddonChecked] = useState(false)
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  // Only nag once they've left the field — then keep the feedback live as they fix it.
+  const [touched, setTouched] = useState<{ email?: boolean; phone?: boolean }>({})
   const [avail, setAvail] = useState<{
     capacity: number
     booked: Booked
@@ -107,6 +123,11 @@ export default function BookingForm({
   const slotsLeft = period ? remainingFor(period) : maxParty
   const overCapacity = !unlimited && partySize > slotsLeft
 
+  const emailInvalid = email.trim() !== "" && !EMAIL_RE.test(email.trim())
+  const phoneInvalid = phone.trim() !== "" && !PHONE_RE.test(phone.trim())
+  const emailError = touched.email && emailInvalid ? "Please enter a valid email address." : null
+  const phoneError = touched.phone && phoneInvalid ? "Use a PH number, e.g. 0917 123 4567 or +63 917 123 4567." : null
+
   function selectDate(s: string) {
     setDateStr(s)
     setPeriod(null) // re-pick the session for the new date
@@ -114,14 +135,24 @@ export default function BookingForm({
 
   const perPerson = price + (addon && addonChecked ? addon.price : 0)
   const subtotal = perPerson * partySize
-  const deposit = Math.round(subtotal / 2)
-  const payNow = bookingFee ?? deposit
+  // 50% of each person's fee, except where the workshop sets a flat reservation
+  // fee (ceramic painting, whose pieces are priced individually). Either way the
+  // down payment is per-person, so it scales with the party.
+  const feePerPerson = bookingFee ?? Math.round(perPerson / 2)
+  const payNow = feePerPerson * partySize
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!dateStr || !period) {
       setStatus("error")
       setMessage("Please choose a date and session.")
+      return
+    }
+    // Surface the field errors even if they never blurred the input.
+    if (emailInvalid || phoneInvalid) {
+      setTouched({ email: true, phone: true })
+      setStatus("error")
+      setMessage("Please check the highlighted fields.")
       return
     }
     const form = e.currentTarget
@@ -137,9 +168,10 @@ export default function BookingForm({
       .filter(Boolean)
       .join(" ")
 
-    // amounts for the sheet: 50/50 split, or a flat booking fee (ceramic → remaining is manual)
+    // amounts for the sheet. Ceramic painting is priced per piece, so its balance
+    // is filled in by hand rather than derived from a list price.
     const feeAmount = payNow
-    const remaining = bookingFee ? "" : subtotal - deposit
+    const remaining = bookingFee ? "" : subtotal - payNow
 
     const res = await fetch("/api/book", {
       method: "POST",
@@ -150,8 +182,8 @@ export default function BookingForm({
 
     if (res.ok) {
       setStatus("success")
-      setMessage("Booking received! We'll confirm once your payment receipt is verified.")
       form.reset()
+      router.push("/book/submitted")
     } else {
       setStatus("error")
       setMessage(json.error ?? "Something went wrong — please try again.")
@@ -159,53 +191,36 @@ export default function BookingForm({
     }
   }
 
+  // On success we navigate to /book/submitted, which has the full page chrome.
   if (status === "success") {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-paper px-4 py-10">
-        <div className="w-full max-w-2xl text-center">
-          <h2 className="font-script text-4xl leading-tight md:text-5xl">one last thing!</h2>
-          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted">
-            Pay your {peso(payNow)} {bookingFee ? "booking fee" : "deposit"} via GCash or bank transfer to reserve your slot.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-start justify-center gap-8">
-            {[
-              { label: "GCash", src: "/assets/Gcash.svg" },
-              { label: "Bank Transfer", src: "/assets/BPI.svg" },
-            ].map((q) => (
-              <div key={q.label} className="flex flex-col items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={q.src}
-                  alt={`${q.label} QR code`}
-                  className="h-64 w-64 rounded-xl border border-divider object-contain p-2"
-                />
-                <p className="mt-2 text-sm font-medium">{q.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <p className="mx-auto mt-8 max-w-sm text-sm leading-relaxed text-muted">
-            Send a screenshot of your payment to us via Instagram or Gmail to confirm your booking.
-          </p>
-
-          <button
-            onClick={() => router.push("/workshops")}
-            className="mt-8 rounded-full bg-olive px-10 py-2.5 text-sm text-cream transition hover:opacity-90"
-          >
-            done
-          </button>
-        </div>
-      </div>
-    )
+    return <p className="text-sm text-muted">Submitting your reservation…</p>
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-3">
       <IconField name="name" required placeholder="Full name" icon={ICONS.name} />
-      <IconField name="email" type="email" required placeholder="Email" icon={ICONS.email} />
-      <div className="grid grid-cols-2 gap-3">
-        <IconField name="phone" placeholder="Phone" icon={ICONS.phone} />
+      <IconField
+        name="email"
+        type="email"
+        required
+        placeholder="Email"
+        icon={ICONS.email}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+        error={emailError}
+      />
+      <div className="grid grid-cols-2 items-start gap-3">
+        <IconField
+          name="phone"
+          type="tel"
+          placeholder="Phone"
+          icon={ICONS.phone}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+          error={phoneError}
+        />
         <IconField name="instagram" placeholder="Instagram" icon={ICONS.instagram} />
       </div>
 
@@ -292,30 +307,26 @@ export default function BookingForm({
 
       <textarea name="notes" placeholder="Anything we should know? (optional)" rows={2} className={FIELD} />
 
-      {bookingFee ? (
-        <div className="rounded-lg bg-card px-3 py-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted">Booking fee to reserve</span>
-            <span className="font-semibold">{peso(bookingFee)}</span>
-          </div>
-          <p className="mt-0.5 text-xs text-muted">Deducted from your total workshop fee.</p>
-        </div>
-      ) : (
-        <div className="rounded-lg bg-card px-3 py-2 text-sm">
+      <div className="rounded-lg bg-card px-3 py-2 text-sm">
+        {!bookingFee && (
           <div className="flex justify-between">
             <span className="text-muted">Subtotal</span>
             <span className="font-semibold">{peso(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-xs text-muted">
-            <span>50% deposit to reserve</span>
-            <span>{peso(deposit)}</span>
-          </div>
+        )}
+        <div className={bookingFee ? "flex justify-between" : "flex justify-between text-xs text-muted"}>
+          <span className={bookingFee ? "text-muted" : undefined}>
+            {bookingFee ? "Down payment to reserve" : "50% down payment to reserve"} ({peso(feePerPerson)} ×{" "}
+            {partySize})
+          </span>
+          <span className={bookingFee ? "font-semibold" : undefined}>{peso(payNow)}</span>
         </div>
-      )}
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">{DOWN_PAYMENT_NOTICE}</p>
+      </div>
 
       <p className="text-xs text-muted">
-        After submitting, scan the studio QR to pay your deposit and send the receipt via Instagram or email —
-        we&apos;ll confirm your slot once it&apos;s verified.
+        Your reservation will be reviewed first. Once it&apos;s approved, we&apos;ll email you the payment
+        instructions and QR code for your down payment.
       </p>
 
       {status === "error" && <p className="text-xs text-red-600">{message}</p>}

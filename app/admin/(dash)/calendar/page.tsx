@@ -1,20 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { PERIOD_LABELS } from "@/lib/booking"
+import { fmtLongDate } from "@/lib/format"
 import ClosureCalendar from "@/components/admin/ClosureCalendar"
 import BlockSlotsForm from "@/components/admin/BlockSlotsForm"
 import { removeSlotBlock } from "@/app/admin/actions"
 
 export const dynamic = "force-dynamic"
-
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  })
-}
 
 export default async function AdminCalendarPage() {
   const today = new Date()
@@ -76,7 +67,7 @@ export default async function AdminCalendarPage() {
               <tbody>
                 {blocks.map((b) => (
                   <tr key={b.id} className="border-b border-divider/60 last:border-0">
-                    <td className="whitespace-nowrap px-4 py-3">{fmtDate(b.date)}</td>
+                    <td className="whitespace-nowrap px-4 py-3">{fmtLongDate(b.date)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">{PERIOD_LABELS[b.period]}</td>
                     <td className="px-4 py-3">{b.workshop.name}</td>
                     <td className="px-4 py-3">{b.slots}</td>

@@ -13,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <span className="font-script text-2xl">tsuchi admin</span>
           <nav className="flex gap-4 text-sm text-muted">
             <Link href="/admin" className="transition hover:text-foreground">Bookings</Link>
+            <Link href="/admin/schedule" className="transition hover:text-foreground">Studio schedules</Link>
             <Link href="/admin/calendar" className="transition hover:text-foreground">Calendar</Link>
             <Link href="/admin/products" className="transition hover:text-foreground">Shop - Empty, Do Not Open</Link>
           </nav>

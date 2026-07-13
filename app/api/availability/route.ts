@@ -7,10 +7,16 @@ export const dynamic = "force-dynamic"
 // Returns the workshop's capacity and, for the next 2 months, how many seats
 // are already taken per date + session (only CONFIRMED bookings count).
 export async function GET(req: Request) {
-  const workshopId = new URL(req.url).searchParams.get("w") ?? ""
+  const params = new URL(req.url).searchParams
+  const workshopId = params.get("w") ?? ""
+  // When the admin edits a booking, its own seats mustn't count against itself.
+  const excludeId = params.get("exclude") ?? undefined
+  const past = params.get("past") === "1" // admin edits can reach past dates
   if (!workshopId) return NextResponse.json({ error: "Missing workshop." }, { status: 400 })
 
-  const { min, max } = bookingWindow()
+  const window = bookingWindow()
+  const min = past ? new Date("2000-01-01") : window.min
+  const max = window.max
   try {
     const [workshop, grouped, closures, blocks, openings] = await Promise.all([
       prisma.workshop.findUnique({ where: { id: workshopId }, select: { capacity: true } }),
@@ -20,6 +26,7 @@ export async function GET(req: Request) {
           workshopId,
           status: { in: SEAT_HOLDING }, // unpaid bookings don't hold a seat
           date: { gte: min, lte: max },
+          ...(excludeId ? { id: { not: excludeId } } : {}),
         },
         _sum: { partySize: true },
       }),

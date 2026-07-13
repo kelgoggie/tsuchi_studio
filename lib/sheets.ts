@@ -3,9 +3,13 @@
  *
  * Setup (owner-friendly, no Google Cloud project needed):
  *  1. In the target Google Sheet: Extensions > Apps Script.
- *  2. Paste a doPost(e) that appends JSON.parse(e.postData.contents) as a row.
+ *  2. Paste in google-apps-script/Code.gs from this repo.
  *  3. Deploy > New deployment > Web app > Execute as "Me", access "Anyone".
  *  4. Put the deployment URL in GOOGLE_SHEETS_WEBHOOK_URL.
+ *
+ * After ANY change to Code.gs you must publish a **New version**
+ * (Deploy > Manage deployments > Edit > Version: New version). Saving the
+ * script is not enough — the deployment keeps serving the pinned old version.
  *
  * Fire-and-forget: a Sheets failure must never block a booking.
  */

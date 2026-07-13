@@ -160,7 +160,16 @@ export default function BookingFilters({
     push(next)
   }
 
-  const activeCount = statuses.length + shops.length
+  function setDate(key: "from" | "to", v: string) {
+    const next = new URLSearchParams(sp.toString())
+    if (v) next.set(key, v)
+    else next.delete(key)
+    push(next)
+  }
+
+  const from = sp.get("from") ?? ""
+  const to = sp.get("to") ?? ""
+  const activeCount = statuses.length + shops.length + (from ? 1 : 0) + (to ? 1 : 0)
 
   return (
     <div className="flex items-center gap-2">
@@ -192,6 +201,32 @@ export default function BookingFilters({
                 onClick={() => toggle("workshop", w.id)}
               />
             ))}
+
+            <div className="my-1.5 border-t border-divider" />
+
+            <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Workshop date
+            </p>
+            <div className="space-y-1.5 px-2.5 pb-1">
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <span className="w-8">From</span>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setDate("from", e.target.value)}
+                  className="w-full rounded-lg border border-divider bg-paper px-2 py-1 text-xs outline-none focus:border-olive"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <span className="w-8">To</span>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setDate("to", e.target.value)}
+                  className="w-full rounded-lg border border-divider bg-paper px-2 py-1 text-xs outline-none focus:border-olive"
+                />
+              </label>
+            </div>
 
             {activeCount > 0 && (
               <>

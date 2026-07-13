@@ -7,6 +7,7 @@ import ContactSection from "@/components/ContactSection"
 import BookingForm from "@/components/BookingForm"
 import { getWorkshop, WORKSHOPS } from "@/lib/workshops"
 import { capacityFor, getCapacities } from "@/lib/booking"
+import { DOWN_PAYMENT_NOTICE } from "@/lib/constants"
 
 export const dynamic = "force-dynamic"
 
@@ -70,6 +71,7 @@ export default async function BookPage({
                   ) : (
                     <p className="mt-2 text-xl font-semibold text-olive">₱{workshop.price.toLocaleString()}/person</p>
                   )}
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted">{DOWN_PAYMENT_NOTICE}</p>
                   <p className="mt-2 text-sm italic leading-relaxed text-muted">{workshop.description}</p>
 
                   <div className="mt-4 text-sm">

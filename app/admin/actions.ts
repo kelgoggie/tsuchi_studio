@@ -5,8 +5,9 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { isAdmin } from "@/lib/auth"
 import { forwardToSheet } from "@/lib/sheets"
-import { createBooking, isMonday, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
+import { createBooking, isMonday, parseDateOnly, PERIODS, PERIOD_LABELS, SEAT_HOLDING } from "@/lib/booking"
 import { ALL_WORKSHOPS } from "@/lib/constants"
+import { fmtDay } from "@/lib/format"
 import { BookingStatus, type Period } from "@/app/generated/prisma/client"
 
 // How each booking status shows up in the Google Sheet's single status column.
@@ -112,6 +113,121 @@ export async function removeSlotBlock(formData: FormData) {
   if (!id) return
   await prisma.slotBlock.delete({ where: { id } })
   revalidatePath("/admin/calendar")
+}
+
+export type EditBookingState = { error: string } | { ok: true } | null
+
+/**
+ * Edit an existing booking. Capacity is re-checked in a transaction against the
+ * target session, ignoring this booking's own seats so it can stay put or shrink.
+ */
+export async function updateBooking(
+  _prev: EditBookingState,
+  formData: FormData
+): Promise<EditBookingState> {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+
+  const id = String(formData.get("id") ?? "")
+  const workshopId = String(formData.get("workshopId") ?? "")
+  const dateStr = String(formData.get("date") ?? "")
+  const period = String(formData.get("period") ?? "") as Period
+  const partySize = Math.max(1, Number(formData.get("partySize")) || 1)
+  const name = String(formData.get("name") ?? "").trim()
+  const email = String(formData.get("email") ?? "").trim()
+  const phone = String(formData.get("phone") ?? "").trim() || null
+  const instagram = String(formData.get("instagram") ?? "").trim() || null
+  const notes = String(formData.get("notes") ?? "").trim() || null
+  const feeRaw = String(formData.get("bookingFee") ?? "").trim()
+  const remRaw = String(formData.get("remainingFee") ?? "").trim()
+  const statusRaw = String(formData.get("status") ?? "PENDING")
+
+  const date = parseDateOnly(dateStr)
+  if (!id) return { error: "Missing booking." }
+  if (!workshopId) return { error: "Choose a workshop." }
+  if (!date) return { error: "Choose a valid date." }
+  if (!(PERIODS as readonly string[]).includes(period)) return { error: "Choose a session." }
+  if (!name || !email) return { error: "Name and email are required." }
+
+  const status = statusRaw in BookingStatus
+    ? BookingStatus[statusRaw as keyof typeof BookingStatus]
+    : BookingStatus.PENDING
+
+  const result = await prisma.$transaction(async (tx) => {
+    const workshop = await tx.workshop.findUnique({ where: { id: workshopId } })
+    if (!workshop || !workshop.active) return { error: "That workshop isn't available." }
+
+    // Only a confirmed booking occupies seats, so an edit only needs to fit if
+    // it's landing (or staying) in the CONFIRMED state.
+    if (status === BookingStatus.CONFIRMED) {
+      const [agg, blocked] = await Promise.all([
+        tx.booking.aggregate({
+          where: {
+            workshopId,
+            date,
+            period,
+            status: { in: SEAT_HOLDING },
+            id: { not: id }, // this booking's own seats don't block itself
+          },
+          _sum: { partySize: true },
+        }),
+        tx.slotBlock.aggregate({ where: { workshopId, date, period }, _sum: { slots: true } }),
+      ])
+      const remaining = workshop.capacity - (agg._sum.partySize ?? 0) - (blocked._sum.slots ?? 0)
+      if (partySize > remaining) {
+        return {
+          error:
+            remaining <= 0
+              ? "That session is already full."
+              : `Only ${remaining} slot(s) left for that session.`,
+        }
+      }
+    }
+
+    await tx.booking.update({
+      where: { id },
+      data: {
+        workshopId,
+        date,
+        period,
+        partySize,
+        name,
+        email,
+        phone,
+        instagram,
+        notes,
+        bookingFee: feeRaw ? Number(feeRaw) : null,
+        remainingFee: remRaw ? Number(remRaw) : null,
+        status,
+      },
+    })
+    return { ok: true as const }
+  })
+
+  if ("error" in result) return result
+
+  const workshop = await prisma.workshop.findUnique({ where: { id: workshopId }, select: { name: true } })
+
+  // Keep the sheet row in step with the edit.
+  await forwardToSheet({
+    action: "update",
+    id,
+    name,
+    workshop: workshop?.name ?? workshopId,
+    date: dateStr,
+    day: fmtDay(date),
+    session: PERIOD_LABELS[period],
+    slots: partySize,
+    phone: phone ?? "",
+    email,
+    instagram: instagram ?? "",
+    bookingFee: feeRaw ? Number(feeRaw) : "",
+    remaining: remRaw ? Number(remRaw) : "",
+    bookingStatus: SHEET_STATUS[statusRaw] ?? "UNPAID",
+  })
+
+  revalidatePath("/admin")
+  revalidatePath("/admin/schedule")
+  return { ok: true }
 }
 
 export type NewBookingState = { error: string } | null
