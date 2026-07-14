@@ -1,9 +1,8 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { PERIOD_LABELS, PERIOD_TIMES, parseDateOnly } from "@/lib/booking"
+import { PERIOD_LABELS, parseDateOnly } from "@/lib/booking"
 import { fmtDate, fmtDateTime, fmtDay, peso } from "@/lib/format"
-import { gmailComposeUrl, scheduleEmail, type BookingEmailData } from "@/lib/email"
 import BookingFilters from "@/components/admin/BookingFilters"
 import BookingSearch from "@/components/admin/BookingSearch"
 import BookingsTable, { type BookingRowData } from "@/components/admin/BookingsTable"
@@ -78,18 +77,6 @@ export default async function AdminBookingsPage({
 
   // Format on the server (PH time) so the client can't hydrate a different string.
   const rows: BookingRowData[] = bookings.map((b) => {
-    const mail: BookingEmailData = {
-      name: b.name,
-      email: b.email,
-      workshop: b.workshop.name,
-      date: fmtDate(b.date),
-      session: PERIOD_LABELS[b.period],
-      time: PERIOD_TIMES[b.period],
-      slots: b.partySize,
-      bookingFee: b.bookingFee,
-      remainingFee: b.remainingFee,
-    }
-
     return {
       booking: {
         id: b.id,
@@ -103,7 +90,6 @@ export default async function AdminBookingsPage({
         instagram: b.instagram,
         notes: b.notes,
         bookingFee: b.bookingFee,
-        remainingFee: b.remainingFee,
         status: b.status,
       },
       bookedOn: fmtDateTime(b.createdAt),
@@ -112,11 +98,10 @@ export default async function AdminBookingsPage({
       dayLabel: fmtDay(b.date),
       sessionLabel: PERIOD_LABELS[b.period],
       feeLabel: peso(b.bookingFee),
-      remainingLabel: peso(b.remainingFee),
-      // The confirmation email has a banner, so it goes through the preview page
-      // (a Gmail compose URL can only carry plain text).
+      // Both emails have a banner (and the request has QR codes), so they go
+      // through the preview page — a Gmail compose URL is plain text only.
+      requestHref: `/admin/email/${b.id}?type=request`,
       confirmHref: `/admin/email/${b.id}`,
-      scheduleHref: gmailComposeUrl(scheduleEmail(mail)),
     }
   })
 

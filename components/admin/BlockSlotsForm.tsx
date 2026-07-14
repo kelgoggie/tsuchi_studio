@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { blockSlots } from "@/app/admin/actions"
 import { ALL_WORKSHOPS } from "@/lib/constants"
+import { useAvailability } from "./useAvailability"
 
 const FIELD =
   "w-full rounded-lg border border-divider bg-paper px-3 py-2.5 text-sm outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/15 disabled:cursor-not-allowed disabled:opacity-50"
@@ -15,7 +16,30 @@ export default function BlockSlotsForm({
   workshops: { id: string; name: string; capacity: number }[]
 }) {
   const [workshopId, setWorkshopId] = useState("")
+  const [period, setPeriod] = useState("")
+  const [date, setDate] = useState("")
+  const [slots, setSlots] = useState(1)
+
   const all = workshopId === ALL_WORKSHOPS
+  const chosen = workshops.find((w) => w.id === workshopId)
+
+  // Live availability for the picked workshop, so we know how many slots are
+  // actually still free to block (bookings + existing blocks already deducted).
+  const { remainingFor } = useAvailability(all ? "" : workshopId)
+
+  // Before a date/session is chosen we can only bound by the workshop's capacity.
+  const maxSlots =
+    !chosen ? null : date && period ? Math.max(0, remainingFor(date, period)) : chosen.capacity
+
+  const tooMany = maxSlots !== null && !all && slots > maxSlots
+
+  const hint = () => {
+    if (all) return "Every slot in this session will be blocked across all workshops."
+    if (!chosen) return null
+    if (!date || !period) return `${chosen.name} seats ${chosen.capacity} per session.`
+    if (maxSlots === 0) return "This session has no free slots left to block."
+    return `${maxSlots} of ${chosen.capacity} slot${maxSlots === 1 ? "" : "s"} still free in this session.`
+  }
 
   return (
     <form action={blockSlots} className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
@@ -34,7 +58,7 @@ export default function BlockSlotsForm({
           <option value={ALL_WORKSHOPS}>All workshops</option>
           {workshops.map((w) => (
             <option key={w.id} value={w.id}>
-              {w.name}
+              {w.name} (max {w.capacity})
             </option>
           ))}
         </select>
@@ -42,7 +66,13 @@ export default function BlockSlotsForm({
 
       <label className="block">
         <span className={LABEL}>Session</span>
-        <select name="period" required defaultValue="" className={SELECT}>
+        <select
+          name="period"
+          required
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          className={SELECT}
+        >
           <option value="" disabled>
             Choose a session…
           </option>
@@ -55,7 +85,14 @@ export default function BlockSlotsForm({
       <div className="grid grid-cols-[1fr_auto] gap-4">
         <label className="block">
           <span className={LABEL}>Date</span>
-          <input name="date" type="date" required className={FIELD} />
+          <input
+            name="date"
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={FIELD}
+          />
         </label>
         <label className="block w-24">
           <span className={LABEL}>Slots</span>
@@ -64,10 +101,13 @@ export default function BlockSlotsForm({
             name="slots"
             type="number"
             min={1}
-            defaultValue={1}
+            max={maxSlots ?? undefined}
+            value={all ? "" : slots}
+            onChange={(e) => setSlots(Math.max(1, Number(e.target.value) || 1))}
             disabled={all}
             placeholder={all ? "All" : undefined}
-            className={FIELD}
+            aria-invalid={tooMany}
+            className={`${FIELD} ${tooMany ? "border-red-500 text-red-600" : ""}`}
           />
         </label>
       </div>
@@ -77,13 +117,21 @@ export default function BlockSlotsForm({
         <input name="reason" placeholder="Optional" className={FIELD} />
       </label>
 
-      <div className="flex items-center justify-end gap-4 sm:col-span-2">
-        {all && (
-          <p className="mr-auto text-xs text-muted">
-            Every slot in this session will be blocked across all workshops.
+      <div className="flex flex-wrap items-center justify-end gap-3 sm:col-span-2">
+        {tooMany ? (
+          <p className="mr-auto text-xs text-red-600">
+            {maxSlots === 0
+              ? "This session has no free slots left to block."
+              : `You can only block up to ${maxSlots} slot${maxSlots === 1 ? "" : "s"} in this session.`}
           </p>
+        ) : (
+          <p className="mr-auto text-xs text-muted">{hint()}</p>
         )}
-        <button className="rounded-full bg-olive px-7 py-2.5 text-sm text-cream transition hover:opacity-90">
+
+        <button
+          disabled={tooMany}
+          className="rounded-full bg-olive px-7 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
           Block slots
         </button>
       </div>

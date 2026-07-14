@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { BookingStatus, type Period } from "@/app/generated/prisma/client"
+import { BookingStatus, type InvoiceVia, type Period } from "@/app/generated/prisma/client"
 
 export const PERIODS = ["MORNING", "AFTERNOON", "EVENING"] as const
 
@@ -70,7 +70,9 @@ export function maxBookingDateStr(): string {
 const DEFAULT_CAPACITY: Record<string, number> = {
   handbuilding: 8,
   "wheel-throwing": 2,
-  "rug-tufting": 1, // only one tufting gun, so only one session at a time
+  // One gun per size: a session is strictly one medium + one large.
+  "rug-tufting-medium": 1,
+  "rug-tufting-large": 1,
   "ceramic-painting": 6,
 }
 
@@ -117,12 +119,14 @@ export type CreateBookingInput = {
   period: Period
   partySize: number
   name: string
-  email: string
-  phone?: string
+  /** Exactly one of email/instagram is required — whichever `invoiceVia` names. */
+  email?: string
   instagram?: string
+  invoiceVia?: InvoiceVia
+  phone?: string
   notes?: string
+  /** The full class fee, paid upfront. */
   bookingFee?: number | null
-  remainingFee?: number | null
   status?: BookingStatus
 }
 
@@ -162,12 +166,12 @@ export async function createBooking(
         period: input.period,
         partySize: input.partySize,
         name: input.name,
-        email: input.email,
-        phone: input.phone || null,
+        email: input.email || null,
         instagram: input.instagram || null,
+        ...(input.invoiceVia ? { invoiceVia: input.invoiceVia } : {}),
+        phone: input.phone || null,
         notes: input.notes || null,
         bookingFee: input.bookingFee ?? null,
-        remainingFee: input.remainingFee ?? null,
         ...(input.status ? { status: input.status } : {}),
       },
     })

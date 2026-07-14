@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import BookingCalendar, { type Booked } from "./BookingCalendar"
-import { DOWN_PAYMENT_NOTICE } from "@/lib/constants"
+import { PAYMENT_NOTICE } from "@/lib/constants"
 
 const FIELD =
   "w-full rounded-lg border border-divider bg-paper px-3 py-2 text-sm outline-none focus:border-olive"
@@ -60,14 +60,12 @@ export default function BookingForm({
   capacity,
   workshopLabel,
   price,
-  bookingFee,
   addon,
 }: {
   workshopId: string
   capacity: number
   workshopLabel?: string
   price: number
-  bookingFee?: number
   addon?: { price: number; label: string }
 }) {
   const router = useRouter()
@@ -76,7 +74,9 @@ export default function BookingForm({
   const [partySize, setPartySize] = useState(1)
   const [addonChecked, setAddonChecked] = useState(false)
   const [email, setEmail] = useState("")
+  const [instagram, setInstagram] = useState("")
   const [phone, setPhone] = useState("")
+  const [invoiceVia, setInvoiceVia] = useState<"EMAIL" | "INSTAGRAM">("EMAIL")
   // Only nag once they've left the field — then keep the feedback live as they fix it.
   const [touched, setTouched] = useState<{ email?: boolean; phone?: boolean }>({})
   const [avail, setAvail] = useState<{
@@ -123,7 +123,9 @@ export default function BookingForm({
   const slotsLeft = period ? remainingFor(period) : maxParty
   const overCapacity = !unlimited && partySize > slotsLeft
 
-  const emailInvalid = email.trim() !== "" && !EMAIL_RE.test(email.trim())
+  // Only the chosen invoice channel is validated — the other is disabled.
+  const emailInvalid =
+    invoiceVia === "EMAIL" && email.trim() !== "" && !EMAIL_RE.test(email.trim())
   const phoneInvalid = phone.trim() !== "" && !PHONE_RE.test(phone.trim())
   const emailError = touched.email && emailInvalid ? "Please enter a valid email address." : null
   const phoneError = touched.phone && phoneInvalid ? "Use a PH number, e.g. 0917 123 4567 or +63 917 123 4567." : null
@@ -135,11 +137,8 @@ export default function BookingForm({
 
   const perPerson = price + (addon && addonChecked ? addon.price : 0)
   const subtotal = perPerson * partySize
-  // 50% of each person's fee, except where the workshop sets a flat reservation
-  // fee (ceramic painting, whose pieces are priced individually). Either way the
-  // down payment is per-person, so it scales with the party.
-  const feePerPerson = bookingFee ?? Math.round(perPerson / 2)
-  const payNow = feePerPerson * partySize
+  // The class is paid in full upfront — there's no balance left owing.
+  const payNow = subtotal
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -168,15 +167,24 @@ export default function BookingForm({
       .filter(Boolean)
       .join(" ")
 
-    // amounts for the sheet. Ceramic painting is priced per piece, so its balance
-    // is filled in by hand rather than derived from a list price.
-    const feeAmount = payNow
-    const remaining = bookingFee ? "" : subtotal - payNow
+    const feeAmount = payNow // full class fee, paid upfront
 
     const res = await fetch("/api/book", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, date: dateStr, period, partySize, notes, workshopId, workshopLabel, feeAmount, remaining }),
+      body: JSON.stringify({
+        ...data,
+        date: dateStr,
+        period,
+        partySize,
+        notes,
+        workshopId,
+        workshopLabel,
+        feeAmount,
+        invoiceVia,
+        email: invoiceVia === "EMAIL" ? email : "",
+        instagram: invoiceVia === "INSTAGRAM" ? instagram : "",
+      }),
     })
     const json = await res.json().catch(() => ({}))
 
@@ -199,29 +207,62 @@ export default function BookingForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-3">
       <IconField name="name" required placeholder="Full name" icon={ICONS.name} />
+
       <IconField
-        name="email"
-        type="email"
-        required
-        placeholder="Email"
-        icon={ICONS.email}
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-        error={emailError}
+        name="phone"
+        type="tel"
+        placeholder="Phone"
+        icon={ICONS.phone}
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+        error={phoneError}
       />
-      <div className="grid grid-cols-2 items-start gap-3">
-        <IconField
-          name="phone"
-          type="tel"
-          placeholder="Phone"
-          icon={ICONS.phone}
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
-          error={phoneError}
-        />
-        <IconField name="instagram" placeholder="Instagram" icon={ICONS.instagram} />
+
+      {/* Where the invoice goes — only the chosen channel is enabled/required. */}
+      <div className="rounded-lg border border-divider bg-paper p-3">
+        <p className="mb-2 text-sm text-muted">Send me my invoice via</p>
+
+        <div className="space-y-2">
+          {(
+            [
+              { via: "EMAIL", label: "Email", icon: ICONS.email },
+              { via: "INSTAGRAM", label: "Instagram", icon: ICONS.instagram },
+            ] as const
+          ).map(({ via, label, icon }) => {
+            const active = invoiceVia === via
+            const isEmail = via === "EMAIL"
+            return (
+              <div key={via} className="flex items-start gap-2.5">
+                <label className="mt-2.5 flex w-24 shrink-0 cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="invoiceVia"
+                    value={via}
+                    checked={active}
+                    onChange={() => setInvoiceVia(via)}
+                    className="accent-olive"
+                  />
+                  {label}
+                </label>
+
+                <div className="flex-1">
+                  <IconField
+                    type={isEmail ? "email" : "text"}
+                    placeholder={isEmail ? "you@email.com" : "@yourhandle"}
+                    icon={icon}
+                    disabled={!active}
+                    required={active}
+                    value={isEmail ? email : instagram}
+                    onChange={(e) => (isEmail ? setEmail(e.target.value) : setInstagram(e.target.value))}
+                    onBlur={() => isEmail && setTouched((t) => ({ ...t, email: true }))}
+                    error={isEmail ? emailError : null}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div>
@@ -308,25 +349,21 @@ export default function BookingForm({
       <textarea name="notes" placeholder="Anything we should know? (optional)" rows={2} className={FIELD} />
 
       <div className="rounded-lg bg-card px-3 py-2 text-sm">
-        {!bookingFee && (
-          <div className="flex justify-between">
-            <span className="text-muted">Subtotal</span>
-            <span className="font-semibold">{peso(subtotal)}</span>
-          </div>
-        )}
-        <div className={bookingFee ? "flex justify-between" : "flex justify-between text-xs text-muted"}>
-          <span className={bookingFee ? "text-muted" : undefined}>
-            {bookingFee ? "Down payment to reserve" : "50% down payment to reserve"} ({peso(feePerPerson)} ×{" "}
-            {partySize})
+        <div className="flex justify-between text-xs text-muted">
+          <span>
+            {peso(perPerson)} × {partySize}
           </span>
-          <span className={bookingFee ? "font-semibold" : undefined}>{peso(payNow)}</span>
         </div>
-        <p className="mt-1.5 text-xs leading-relaxed text-muted">{DOWN_PAYMENT_NOTICE}</p>
+        <div className="flex justify-between">
+          <span className="text-muted">Total to pay upfront</span>
+          <span className="font-semibold">{peso(payNow)}</span>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">{PAYMENT_NOTICE}</p>
       </div>
 
       <p className="text-xs text-muted">
-        Your reservation will be reviewed first. Once it&apos;s approved, we&apos;ll email you the payment
-        instructions and QR code for your down payment.
+        Your reservation will be reviewed first. Once it&apos;s approved, we&apos;ll send you the payment
+        instructions and QR code for the full amount.
       </p>
 
       {status === "error" && <p className="text-xs text-red-600">{message}</p>}

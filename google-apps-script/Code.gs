@@ -15,6 +15,9 @@
  */
 
 // Column positions, 1-indexed, matching the sheet headers.
+//
+// The studio now takes FULL payment upfront, so the old "Remaining Fee" column
+// is gone — delete it from the sheet so these positions line up again.
 var COLS = {
   bookedOn: 1,      // Booked On
   name: 2,          // Name
@@ -27,8 +30,8 @@ var COLS = {
   phone: 9,         // Contact No.
   email: 10,        // Email Address
   instagram: 11,    // Instagram
-  bookingFee: 12,   // Booking Fee
-  remaining: 13,    // Remaining Fee
+  invoiceVia: 12,   // Invoice Via  (EMAIL or INSTAGRAM — how they want the invoice)
+  bookingFee: 13,   // Amount Paid  (the full class fee)
   bookingStatus: 14 // Booking Status
 };
 
@@ -83,8 +86,8 @@ function appendRow(sheet, d) {
     d.phone,
     d.email,
     d.instagram,
+    d.invoiceVia || "EMAIL",
     d.bookingFee,
-    d.remaining,
     d.bookingStatus || "UNPAID"
   ]);
 

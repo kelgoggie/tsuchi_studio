@@ -22,6 +22,12 @@ enum BookingStatus {
   CANCELLED
 }
 
+// How the customer wants their invoice / proof-of-payment thread to happen.
+enum InvoiceVia {
+  EMAIL
+  INSTAGRAM
+}
+
 // A workshop type and its per-session capacity rule.
 model Workshop {
   id          String      @id @default(cuid())
@@ -39,21 +45,23 @@ model Workshop {
 
 // A customer's booking for a workshop on a specific date + session.
 model Booking {
-  id           String        @id @default(cuid())
-  workshop     Workshop      @relation(fields: [workshopId], references: [id])
-  workshopId   String
-  date         DateTime      @db.Date
-  period       Period
-  partySize    Int           @default(1)
-  name         String
-  email        String
-  phone        String?
-  instagram    String?
-  notes        String?
-  bookingFee   Int? // amount paid to reserve (50% deposit, or flat fee)
-  remainingFee Int? // balance owed; null when set manually (e.g. ceramic painting)
-  status       BookingStatus @default(PENDING)
-  createdAt    DateTime      @default(now())
+  id         String        @id @default(cuid())
+  workshop   Workshop      @relation(fields: [workshopId], references: [id])
+  workshopId String
+  date       DateTime      @db.Date
+  period     Period
+  partySize  Int           @default(1)
+  name       String
+  // The customer picks how we reach them, so exactly one of these is required —
+  // enforced in the booking API, not by the DB.
+  email      String?
+  instagram  String?
+  invoiceVia InvoiceVia    @default(EMAIL)
+  phone      String?
+  notes      String?
+  bookingFee Int? // the full class fee, paid upfront
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
 
   @@index([date, period, workshopId])
 }

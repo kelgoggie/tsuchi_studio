@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { bookingWindow, createBooking, isClosed, isDayOpen, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
 import { forwardToSheet } from "@/lib/sheets"
-import type { Period } from "@/app/generated/prisma/client"
+import type { InvoiceVia, Period } from "@/app/generated/prisma/client"
 
 export async function POST(req: Request) {
   let body: Record<string, unknown>
@@ -14,14 +14,29 @@ export async function POST(req: Request) {
   const workshopId = String(body.workshopId ?? "").trim()
   const name = String(body.name ?? "").trim()
   const email = String(body.email ?? "").trim()
+  const instagram = String(body.instagram ?? "").trim()
   const period = String(body.period ?? "") as Period
   const dateStr = String(body.date ?? "")
 
-  if (!workshopId || !name || !email) {
-    return NextResponse.json({ error: "Name, email, and workshop are required." }, { status: 400 })
+  // The customer chooses where their invoice goes; that channel is the one we
+  // require, so an Instagram-only booking has no email at all.
+  const invoiceVia: InvoiceVia = body.invoiceVia === "INSTAGRAM" ? "INSTAGRAM" : "EMAIL"
+
+  if (!workshopId || !name) {
+    return NextResponse.json({ error: "Name and workshop are required." }, { status: 400 })
   }
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 })
+  if (invoiceVia === "EMAIL") {
+    if (!email) {
+      return NextResponse.json({ error: "Please enter the email for your invoice." }, { status: 400 })
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 })
+    }
+  } else if (!instagram) {
+    return NextResponse.json(
+      { error: "Please enter the Instagram handle for your invoice." },
+      { status: 400 }
+    )
   }
   if (!(PERIODS as readonly string[]).includes(period)) {
     return NextResponse.json({ error: "Please choose a session." }, { status: 400 })
@@ -46,11 +61,10 @@ export async function POST(req: Request) {
 
   const partySize = Math.max(1, Math.min(20, Number(body.partySize) || 1))
   const phone = body.phone ? String(body.phone).trim() : undefined
-  const instagram = body.instagram ? String(body.instagram).trim() : undefined
   const notes = body.notes ? String(body.notes).trim() : undefined
 
+  // The class is paid in full upfront, so this is the whole fee.
   const feeAmount = Number(body.feeAmount) || 0
-  const remaining = body.remaining === "" || body.remaining == null ? "" : Number(body.remaining)
   const workshopLabel = String(body.workshopLabel ?? workshopId)
   const day = date.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
 
@@ -60,12 +74,12 @@ export async function POST(req: Request) {
     period,
     partySize,
     name,
-    email,
+    email: email || undefined,
+    instagram: instagram || undefined,
+    invoiceVia,
     phone,
-    instagram,
     notes,
     bookingFee: feeAmount || null,
-    remainingFee: remaining === "" ? null : remaining,
   })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 409 })
@@ -82,9 +96,9 @@ export async function POST(req: Request) {
     slots: partySize,
     phone: phone ?? "",
     email,
-    instagram: instagram ?? "",
+    instagram,
+    invoiceVia,
     bookingFee: feeAmount,
-    remaining,
     bookingStatus: "UNPAID",
   })
 

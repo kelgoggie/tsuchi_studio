@@ -5,7 +5,15 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { isAdmin } from "@/lib/auth"
 import { forwardToSheet } from "@/lib/sheets"
-import { createBooking, isMonday, parseDateOnly, PERIODS, PERIOD_LABELS, SEAT_HOLDING } from "@/lib/booking"
+import {
+  createBooking,
+  isMonday,
+  parseDateOnly,
+  remainingSeats,
+  PERIODS,
+  PERIOD_LABELS,
+  SEAT_HOLDING,
+} from "@/lib/booking"
 import { ALL_WORKSHOPS } from "@/lib/constants"
 import { fmtDay } from "@/lib/format"
 import { BookingStatus, type Period } from "@/app/generated/prisma/client"
@@ -101,11 +109,58 @@ export async function blockSlots(formData: FormData) {
       }),
     ])
   } else {
-    await prisma.slotBlock.create({ data: { workshopId, date, period, slots, reason } })
+    // Never block more slots than the session actually has free — the form warns
+    // about this, but a stale tab could still post an over-large number.
+    const free = await remainingSeats(workshopId, date, period)
+    if (free <= 0) return
+    await prisma.slotBlock.create({
+      data: { workshopId, date, period, slots: Math.min(slots, free), reason },
+    })
   }
 
   revalidatePath("/admin/calendar")
   revalidatePath("/admin/schedule")
+}
+
+export type CapacityState = { error: string } | { ok: true } | null
+
+/**
+ * Change how many slots a workshop seats per session. This is the real capacity
+ * in the database, so it immediately affects what customers can book.
+ */
+export async function updateCapacities(
+  _prev: CapacityState,
+  formData: FormData
+): Promise<CapacityState> {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+
+  const workshops = await prisma.workshop.findMany({ select: { id: true, name: true, capacity: true } })
+
+  const updates: { id: string; capacity: number }[] = []
+  for (const w of workshops) {
+    const raw = formData.get(`capacity_${w.id}`)
+    if (raw == null || String(raw).trim() === "") continue
+
+    const capacity = Number(raw)
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      return { error: `${w.name}: slots must be a whole number of at least 1.` }
+    }
+    if (capacity !== w.capacity) updates.push({ id: w.id, capacity })
+  }
+
+  if (updates.length === 0) return { ok: true }
+
+  await prisma.$transaction(
+    updates.map((u) => prisma.workshop.update({ where: { id: u.id }, data: { capacity: u.capacity } }))
+  )
+
+  // Capacity feeds availability everywhere.
+  revalidatePath("/admin/calendar")
+  revalidatePath("/admin/schedule")
+  revalidatePath("/admin")
+  revalidatePath("/workshops")
+  revalidatePath("/book")
+  return { ok: true }
 }
 
 export async function removeSlotBlock(formData: FormData) {
@@ -140,7 +195,6 @@ export async function updateBooking(
   const instagram = String(formData.get("instagram") ?? "").trim() || null
   const notes = String(formData.get("notes") ?? "").trim() || null
   const feeRaw = String(formData.get("bookingFee") ?? "").trim()
-  const remRaw = String(formData.get("remainingFee") ?? "").trim()
   const statusRaw = String(formData.get("status") ?? "PENDING")
 
   const date = parseDateOnly(dateStr)
@@ -148,7 +202,8 @@ export async function updateBooking(
   if (!workshopId) return { error: "Choose a workshop." }
   if (!date) return { error: "Choose a valid date." }
   if (!(PERIODS as readonly string[]).includes(period)) return { error: "Choose a session." }
-  if (!name || !email) return { error: "Name and email are required." }
+  if (!name) return { error: "A name is required." }
+  if (!email && !instagram) return { error: "Add an email or an Instagram handle." }
 
   const status = statusRaw in BookingStatus
     ? BookingStatus[statusRaw as keyof typeof BookingStatus]
@@ -198,7 +253,6 @@ export async function updateBooking(
         instagram,
         notes,
         bookingFee: feeRaw ? Number(feeRaw) : null,
-        remainingFee: remRaw ? Number(remRaw) : null,
         status,
       },
     })
@@ -222,8 +276,8 @@ export async function updateBooking(
     phone: phone ?? "",
     email,
     instagram: instagram ?? "",
+    invoiceVia: email ? "EMAIL" : "INSTAGRAM",
     bookingFee: feeRaw ? Number(feeRaw) : "",
-    remaining: remRaw ? Number(remRaw) : "",
     bookingStatus: SHEET_STATUS[statusRaw] ?? "UNPAID",
   })
 
@@ -251,14 +305,14 @@ export async function createAdminBooking(
   const instagram = String(formData.get("instagram") ?? "").trim() || undefined
   const notes = String(formData.get("notes") ?? "").trim() || undefined
   const feeRaw = String(formData.get("bookingFee") ?? "").trim()
-  const remRaw = String(formData.get("remainingFee") ?? "").trim()
   const statusRaw = String(formData.get("status") ?? "PENDING")
 
   const date = parseDateOnly(dateStr)
   if (!workshopId) return { error: "Choose a workshop." }
   if (!date) return { error: "Choose a valid date." }
   if (!(PERIODS as readonly string[]).includes(period)) return { error: "Choose a session." }
-  if (!name || !email) return { error: "Name and email are required." }
+  if (!name) return { error: "A name is required." }
+  if (!email && !instagram) return { error: "Add an email or an Instagram handle." }
 
   const status = statusRaw in BookingStatus
     ? BookingStatus[statusRaw as keyof typeof BookingStatus]
@@ -275,7 +329,6 @@ export async function createAdminBooking(
     instagram,
     notes,
     bookingFee: feeRaw ? Number(feeRaw) : null,
-    remainingFee: remRaw ? Number(remRaw) : null,
     status,
   })
   if (!result.ok) return { error: result.error }
@@ -297,8 +350,8 @@ export async function createAdminBooking(
     phone: phone ?? "",
     email,
     instagram: instagram ?? "",
+    invoiceVia: email ? "EMAIL" : "INSTAGRAM",
     bookingFee: feeRaw ? Number(feeRaw) : "",
-    remaining: remRaw ? Number(remRaw) : "",
     bookingStatus: SHEET_STATUS[statusRaw] ?? "UNPAID",
   })
 

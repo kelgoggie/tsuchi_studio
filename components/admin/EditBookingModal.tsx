@@ -24,12 +24,11 @@ export type EditableBooking = {
   period: string
   partySize: number
   name: string
-  email: string
+  email: string | null
   phone: string | null
   instagram: string | null
   notes: string | null
   bookingFee: number | null
-  remainingFee: number | null
   status: string
 }
 
@@ -181,7 +180,7 @@ export default function EditBookingModal({
 
             <label className="block">
               <span className={LABEL}>Email</span>
-              <input name="email" type="email" required defaultValue={booking.email} className={FIELD} />
+              <input name="email" type="email" defaultValue={booking.email ?? ""} className={FIELD} />
             </label>
 
             <label className="block">
@@ -195,23 +194,12 @@ export default function EditBookingModal({
             </label>
 
             <label className="block">
-              <span className={LABEL}>Booking fee (₱)</span>
+              <span className={LABEL}>Amount paid (₱)</span>
               <input
                 name="bookingFee"
                 type="number"
                 min={0}
                 defaultValue={booking.bookingFee ?? ""}
-                className={FIELD}
-              />
-            </label>
-
-            <label className="block">
-              <span className={LABEL}>Remaining fee (₱)</span>
-              <input
-                name="remainingFee"
-                type="number"
-                min={0}
-                defaultValue={booking.remainingFee ?? ""}
                 className={FIELD}
               />
             </label>

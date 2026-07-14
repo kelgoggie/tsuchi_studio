@@ -158,7 +158,7 @@ export default function NewBookingForm({
 
           <label className="block">
             <span className={LABEL}>Email</span>
-            <input name="email" type="email" required placeholder="Email" className={FIELD} />
+            <input name="email" type="email" placeholder="Email (or use Instagram)" className={FIELD} />
           </label>
 
           <label className="block">
@@ -172,13 +172,8 @@ export default function NewBookingForm({
           </label>
 
           <label className="block">
-            <span className={LABEL}>Booking fee (₱)</span>
+            <span className={LABEL}>Amount paid (₱)</span>
             <input name="bookingFee" type="number" min={0} placeholder="e.g. 600" className={FIELD} />
-          </label>
-
-          <label className="block">
-            <span className={LABEL}>Remaining fee (₱)</span>
-            <input name="remainingFee" type="number" min={0} placeholder="e.g. 600" className={FIELD} />
           </label>
 
           <label className="block sm:col-span-2">

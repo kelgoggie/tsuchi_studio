@@ -3,7 +3,7 @@ import Header from "@/components/Header"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import ContactSection from "@/components/ContactSection"
-import { DOWN_PAYMENT_NOTICE } from "@/lib/constants"
+import { PAYMENT_NOTICE } from "@/lib/constants"
 
 export const metadata = { title: "Reservation submitted · Tsuchi Studio" }
 
@@ -22,10 +22,9 @@ export default function BookingSubmittedPage() {
               <p>Thank you for booking a workshop with us.</p>
               <p>
                 Your reservation request has been received and is currently under review. Once your request has been
-                approved, we will send a confirmation email containing the payment instructions and QR code for your
-                down payment.
+                approved, we will send you the payment instructions and QR code for the full class fee.
               </p>
-              <p>{DOWN_PAYMENT_NOTICE}</p>
+              <p>{PAYMENT_NOTICE}</p>
               <p>Thank you for your patience. We look forward to seeing you at the studio!</p>
             </div>
 

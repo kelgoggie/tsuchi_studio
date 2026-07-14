@@ -1,6 +1,10 @@
 // Display content for each workshop offering. `workshopId` maps to a DB
-// workshop for capacity + booking (the two rug-tufting tiers share one pool);
-// `slug` is the unique key used in the /book?w=<slug> URL.
+// workshop for capacity + booking; `slug` is the unique key used in the
+// /book?w=<slug> URL.
+//
+// Medium and large rug tufting have SEPARATE pools of 1 each: a session is
+// strictly one medium + one large, never two of the same size. (They shared one
+// pool of 2 before, which allowed 2 mediums.)
 
 export type WorkshopAddon = { price: number; label: string; items: string[] }
 
@@ -18,8 +22,6 @@ export type WorkshopOffering = {
   priceOptions?: { label: string; price: number }[]
   // Custom price line shown instead of the default "₱X/person".
   priceNote?: string
-  // Flat reservation fee (deducted from the total) instead of a 50% deposit.
-  bookingFee?: number
   // Extra paragraphs shown on the booking page (disclaimers / details).
   bookingNotes?: string[]
 }
@@ -76,7 +78,6 @@ export const WORKSHOPS: WorkshopOffering[] = [
     image: "/images/ceramic-painting.JPG",
     price: 500,
     priceNote: "Pieces start at ₱500",
-    bookingFee: 250,
     description: "Paint and personalize a ready-to-paint ceramic piece.",
     inclusions: [
       "Underglaze paints",
@@ -85,13 +86,13 @@ export const WORKSHOPS: WorkshopOffering[] = [
     ],
     bookingNotes: [
       "Choose from a curated selection of ready-to-paint ceramic pieces available at the studio, with prices starting at ₱500. Pieces range from small to large, allowing you to choose one that suits your style.",
-      "A ₱250 booking fee is required to reserve your slot. The booking fee will be deducted from your total workshop fee. You may decorate your piece using underglaze with a clear glaze finish for a smooth, glossy surface that highlights your design, or choose from our selection of glaze combinations for a more expressive, layered finish.",
+      "You may decorate your piece using underglaze with a clear glaze finish for a smooth, glossy surface that highlights your design, or choose from our selection of glaze combinations for a more expressive, layered finish. If you choose a piece above the base price, the difference is settled at the studio.",
       "All materials, glazing, and firing are included.",
     ],
   },
   {
     slug: "medium-rug-tufting",
-    workshopId: "rug-tufting",
+    workshopId: "rug-tufting-medium",
     label: "Medium Rug Tufting",
     titleScript: "medium rug tufting",
     image: "/images/rug-tugting-01.JPG",
@@ -102,7 +103,7 @@ export const WORKSHOPS: WorkshopOffering[] = [
   },
   {
     slug: "large-rug-tufting",
-    workshopId: "rug-tufting",
+    workshopId: "rug-tufting-large",
     label: "Large Rug Tufting",
     titleScript: "large rug tufting",
     image: "/images/rug-tugting-02.JPG",

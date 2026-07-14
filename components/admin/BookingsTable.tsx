@@ -28,9 +28,8 @@ export type BookingRowData = {
   dayLabel: string
   sessionLabel: string
   feeLabel: string
-  remainingLabel: string
   confirmHref: string
-  scheduleHref: string
+  requestHref: string
 }
 
 type Column = {
@@ -54,13 +53,35 @@ const COLUMNS: Column[] = [
   { key: "email", label: "Email Address", width: 200 },
   { key: "instagram", label: "Instagram", width: 130 },
   { key: "fee", label: "Booking Fee", width: 110 },
-  { key: "remaining", label: "Remaining Fee", width: 120 },
   { key: "status", label: "Booking Status", width: 150, noTruncate: true },
   { key: "actions", label: "Actions", width: 200, noTruncate: true },
-  { key: "emails", label: "Emails", width: 230, noTruncate: true },
+  { key: "email-actions", label: "Emails", width: 250, noTruncate: true },
 ]
 
-const MIN_WIDTH = 50
+/**
+ * "Compress" squeezes the secondary columns so the two things you act on —
+ * the guest's name and the Confirm/Cancel buttons — fit without scrolling.
+ * Everything else stays visible, just truncated.
+ */
+const COMPACT: Record<string, number> = {
+  bookedOn: 80,
+  name: 140,
+  id: 50,
+  workshop: 85,
+  date: 90,
+  day: 45,
+  session: 65,
+  slots: 40,
+  phone: 55,
+  email: 70,
+  instagram: 50,
+  fee: 55,
+  status: 105,
+  actions: 195,
+  "email-actions": 230,
+}
+
+const MIN_WIDTH = 40
 const STORAGE_KEY = "tsuchi-admin-col-widths"
 
 function StatusButton({ id, status, label }: { id: string; status: string; label: string }) {
@@ -133,15 +154,17 @@ export default function BookingsTable({
     document.body.style.userSelect = "none"
   }
 
-  function resetWidths() {
-    const defaults = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width]))
-    setWidths(defaults)
+  function applyWidths(next: Record<string, number>) {
+    setWidths(next)
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     } catch {
       /* ignore */
     }
   }
+
+  const resetWidths = () => applyWidths(Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])))
+  const compressWidths = () => applyWidths({ ...COMPACT })
 
   /** Cell contents keyed by column. */
   function cell(col: Column, r: BookingRowData) {
@@ -171,13 +194,11 @@ export default function BookingsTable({
       case "phone":
         return <span className="text-muted">{b.phone ?? "—"}</span>
       case "email":
-        return <span className="text-muted">{b.email}</span>
+        return <span className="text-muted">{b.email ?? "—"}</span>
       case "instagram":
         return <span className="text-muted">{b.instagram ? `@${b.instagram.replace(/^@/, "")}` : "—"}</span>
       case "fee":
         return r.feeLabel
-      case "remaining":
-        return r.remainingLabel
       case "status":
         return (
           <span
@@ -194,14 +215,14 @@ export default function BookingsTable({
             {b.status !== "PENDING" && <StatusButton id={b.id} status="PENDING" label="Pending" />}
           </div>
         )
-      case "emails":
+      case "email-actions":
         return (
           <div className="flex gap-1">
+            <a href={r.requestHref} target="_blank" rel="noopener noreferrer" className={PILL}>
+              Request payment
+            </a>
             <a href={r.confirmHref} target="_blank" rel="noopener noreferrer" className={PILL}>
               Confirmation
-            </a>
-            <a href={r.scheduleHref} target="_blank" rel="noopener noreferrer" className={PILL}>
-              Full schedule
             </a>
           </div>
         )
@@ -214,8 +235,16 @@ export default function BookingsTable({
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-end gap-3">
-        <p className="text-xs text-muted">Drag a column edge to resize</p>
+      <div className="mb-2 flex items-center justify-end gap-2">
+        <p className="mr-1 text-xs text-muted">Drag lang ang column edge to resize super handy</p>
+        <button
+          type="button"
+          onClick={compressWidths}
+          title="Squeeze the columns so the name and action buttons fit without scrolling"
+          className="rounded-full border border-divider px-3 py-1 text-xs text-muted transition hover:border-olive hover:text-olive"
+        >
+          Compress
+        </button>
         <button
           type="button"
           onClick={resetWidths}
@@ -255,7 +284,7 @@ export default function BookingsTable({
             {rows.map((r, i) => (
               <tr
                 key={r.booking.id}
-                className={`border-b border-divider/60 last:border-0 ${i % 2 === 1 ? "bg-paper" : "bg-card"}`}
+                className={`border-b border-divider/60 last:border-0 ${i % 2 === 1 ? "bg-cream" : "bg-card"}`}
               >
                 {COLUMNS.map((c) => (
                   <td
