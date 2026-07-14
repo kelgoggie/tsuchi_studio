@@ -1,18 +1,40 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-/** Day picker for the schedule timetable — sits on the left of the table. */
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+const pad = (n: number) => String(n).padStart(2, "0")
+const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+/**
+ * Month calendar for picking which day's schedule to view. Days carrying
+ * confirmed bookings show a count; closed days are dimmed but still viewable.
+ */
 export default function SchedulePicker({
   date,
-  days,
+  counts,
+  closedDates,
+  openDates,
 }: {
   date: string
-  /** Upcoming open days: "YYYY-MM-DD" + a human label + how many bookings that day. */
-  days: { value: string; label: string; count: number }[]
+  /** "YYYY-MM-DD" → number of confirmed bookings that day. */
+  counts: Record<string, number>
+  closedDates: string[]
+  /** Mondays the studio has opened. */
+  openDates: string[]
 }) {
   const router = useRouter()
   const sp = useSearchParams()
+
+  const closed = new Set(closedDates)
+  const opened = new Set(openDates)
+
+  const selected = new Date(`${date}T00:00:00`)
+  const [view, setView] = useState(() => new Date(selected.getFullYear(), selected.getMonth(), 1))
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
   function go(next: string) {
     const params = new URLSearchParams(sp.toString())
@@ -20,37 +42,89 @@ export default function SchedulePicker({
     router.push(`/admin/schedule?${params.toString()}`)
   }
 
+  const year = view.getFullYear()
+  const month = view.getMonth()
+  const startPad = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  const cells: (number | null)[] = [
+    ...Array(startPad).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+
   return (
     <aside className="rounded-2xl border border-divider bg-card p-4">
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted">Jump to a date</span>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => e.target.value && go(e.target.value)}
-          className="w-full rounded-lg border border-divider bg-paper px-3 py-2.5 text-sm outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/15"
-        />
-      </label>
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          onClick={() => setView(new Date(year, month - 1, 1))}
+          className="rounded px-2 py-1 text-olive transition hover:bg-paper"
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <span className="text-sm font-medium">
+          {view.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        </span>
+        <button
+          onClick={() => setView(new Date(year, month + 1, 1))}
+          className="rounded px-2 py-1 text-olive transition hover:bg-paper"
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
 
-      <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Upcoming days</p>
-      <ul className="max-h-96 space-y-0.5 overflow-y-auto">
-        {days.map((d) => (
-          <li key={d.value}>
-            <button
-              type="button"
-              onClick={() => go(d.value)}
-              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition ${
-                d.value === date ? "bg-olive text-cream" : "text-muted hover:bg-paper"
-              }`}
-            >
-              <span>{d.label}</span>
-              <span className={`text-xs ${d.value === date ? "text-cream/80" : "text-muted"}`}>
-                {d.count === 0 ? "—" : d.count}
-              </span>
-            </button>
-          </li>
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-muted">
+        {WEEKDAYS.map((w) => (
+          <div key={w}>{w}</div>
         ))}
-      </ul>
+      </div>
+
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (day === null) return <div key={i} />
+          const d = new Date(year, month, day)
+          const s = toStr(d)
+          const isSel = s === date
+          const isToday = s === toStr(today)
+          const count = counts[s] ?? 0
+          // Closed = a blocked day, or a Monday that wasn't opened.
+          const isClosed = closed.has(s) || (d.getDay() === 1 && !opened.has(s))
+
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => go(s)}
+              title={isClosed ? "Closed" : count > 0 ? `${count} booking${count === 1 ? "" : "s"}` : "No bookings"}
+              className={`relative flex aspect-square flex-col items-center justify-center rounded-md text-xs transition ${
+                isSel
+                  ? "bg-olive font-semibold text-cream"
+                  : isClosed
+                    ? "text-muted/40 hover:bg-paper"
+                    : "hover:bg-paper"
+              } ${isToday && !isSel ? "ring-1 ring-olive/40" : ""}`}
+            >
+              {day}
+              {/* a dot means the day has confirmed bookings */}
+              {count > 0 && (
+                <span
+                  className={`absolute bottom-1 h-1 w-1 rounded-full ${isSel ? "bg-cream" : "bg-olive"}`}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-divider pt-3 text-[11px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-olive" /> has bookings
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-sm bg-divider" /> closed
+        </span>
+      </div>
     </aside>
   )
 }

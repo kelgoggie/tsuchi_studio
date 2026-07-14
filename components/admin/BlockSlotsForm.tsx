@@ -34,7 +34,7 @@ export default function BlockSlotsForm({
           <option value={ALL_WORKSHOPS}>All workshops</option>
           {workshops.map((w) => (
             <option key={w.id} value={w.id}>
-              {w.name} (max {w.capacity})
+              {w.name}
             </option>
           ))}
         </select>

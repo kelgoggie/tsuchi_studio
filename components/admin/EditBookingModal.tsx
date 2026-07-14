@@ -1,7 +1,8 @@
 "use client"
 
-import { useActionState, useCallback, useEffect, useState } from "react"
-import BookingCalendar, { type Booked } from "@/components/BookingCalendar"
+import { useActionState, useEffect, useState } from "react"
+import BookingCalendar from "@/components/BookingCalendar"
+import { useAvailability } from "./useAvailability"
 import { updateBooking, type EditBookingState } from "@/app/admin/actions"
 
 const FIELD =
@@ -48,37 +49,9 @@ export default function EditBookingModal({
   const [period, setPeriod] = useState(booking.period)
   const [partySize, setPartySize] = useState(booking.partySize)
 
-  const [avail, setAvail] = useState<{
-    capacity: number
-    booked: Booked
-    closedDates: string[]
-    openDates: string[]
-  }>({ capacity: 0, booked: {}, closedDates: [], openDates: [] })
-
   // Availability for the *currently selected* workshop, ignoring this booking's
   // own seats so it isn't blocked by itself.
-  const loadAvailability = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `/api/availability?w=${encodeURIComponent(workshopId)}&exclude=${encodeURIComponent(booking.id)}&past=1`
-      )
-      const d = await res.json()
-      if (d && typeof d.capacity === "number") {
-        setAvail({
-          capacity: d.capacity,
-          booked: d.booked ?? {},
-          closedDates: d.closedDates ?? [],
-          openDates: d.openDates ?? [],
-        })
-      }
-    } catch {
-      /* the server still enforces capacity on save */
-    }
-  }, [workshopId, booking.id])
-
-  useEffect(() => {
-    loadAvailability()
-  }, [loadAvailability])
+  const { avail, remainingFor } = useAvailability(workshopId, { excludeId: booking.id, past: true })
 
   // Close on Escape.
   useEffect(() => {
@@ -93,8 +66,7 @@ export default function EditBookingModal({
   }, [state, onClose])
 
   const cap = avail.capacity
-  const remainingFor = (p: string) => cap - (avail.booked[dateStr]?.[p] ?? 0)
-  const slotsLeft = period ? remainingFor(period) : cap
+  const slotsLeft = period ? remainingFor(dateStr, period) : cap
   const overCapacity = partySize > slotsLeft
 
   return (
@@ -146,7 +118,7 @@ export default function EditBookingModal({
               <span className={LABEL}>Session</span>
               <div className="flex flex-col gap-1.5">
                 {SESSIONS.map((p) => {
-                  const rem = remainingFor(p)
+                  const rem = remainingFor(dateStr, p)
                   const tooSmall = rem < partySize
                   return (
                     <button

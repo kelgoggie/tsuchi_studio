@@ -1,10 +1,11 @@
-// Prefilled Gmail drafts for the admin. We don't send mail from the server —
-// these open Gmail in a new tab with everything written, so the studio reviews
-// and sends from its own account (and replies come back to it).
+// Emails the studio sends from its own Gmail. We don't send from the server, so
+// there are two shapes of the same message:
+//
+//   • plain text  → prefilled into a Gmail compose URL (one click, no images)
+//   • HTML        → rendered on /admin/email/<id> and copied into Gmail, which
+//                   keeps the banner image and styling
 //
 // Client-safe: no server-only imports.
-
-import { DOWN_PAYMENT_NOTICE } from "@/lib/constants"
 
 export type BookingEmailData = {
   name: string
@@ -12,8 +13,10 @@ export type BookingEmailData = {
   workshop: string
   /** Already formatted for humans, e.g. "Fri, Jul 17, 2026". */
   date: string
-  /** e.g. "Morning · 9:00–12:00". */
+  /** Session label, e.g. "Morning · 9:00–12:00". */
   session: string
+  /** Just the hours, e.g. "9:00–12:00". */
+  time: string
   slots: number
   bookingFee: number | null
   remainingFee: number | null
@@ -27,40 +30,31 @@ export function gmailComposeUrl({ to, subject, body }: { to: string; subject: st
   return `https://mail.google.com/mail/?${params.toString()}`
 }
 
-function detailLines(b: BookingEmailData): string[] {
+const slotWord = (n: number) => `${n} slot${n === 1 ? "" : "s"}`
+
+/** The confirmation email's prose, shared by the plain-text and HTML versions. */
+export function confirmationParagraphs(b: BookingEmailData): string[] {
+  const paid = b.bookingFee != null ? peso(b.bookingFee) : "your booking fee"
+
   return [
-    `Workshop: ${b.workshop}`,
-    `Date: ${b.date}`,
-    `Session: ${b.session}`,
-    `Slots: ${b.slots}`,
+    `Hello, ${b.name}!`,
+    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of ${paid} to reserve ${slotWord(
+      b.slots
+    )} for "${b.workshop}" on ${b.date} from ${b.time}. Wear something comfy, bring your favorite drink, and get ready to build something new with us!`,
+    "Please note that the booking fee paid is non-refundable, and you may only change your schedule up to a week before your scheduled workshop, and only within the next three months of your initial booking. To maximize your timeslot, please make sure to arrive at least 10-15 minutes before your schedule.",
+    "Thank you for deciding to join us at our studio!",
+    "See you soon!",
   ]
 }
 
-/** Sent when the studio approves a reservation — payment instructions + QR. */
-export function confirmationEmail(b: BookingEmailData) {
-  const lines = [
-    `Hi ${b.name},`,
-    "",
-    "Good news — your reservation request has been approved! Here are your booking details:",
-    "",
-    ...detailLines(b),
-    ...(b.bookingFee != null ? [`Down payment: ${peso(b.bookingFee)}`] : []),
-    ...(b.remainingFee != null ? [`Remaining balance: ${peso(b.remainingFee)} (payable at the studio)`] : []),
-    "",
-    "To secure your slot, please settle your down payment via GCash or bank transfer using the QR code attached to this email, then reply with a screenshot of your receipt.",
-    "",
-    DOWN_PAYMENT_NOTICE,
-    "",
-    "See you at the studio!",
-    "",
-    "Warmly,",
-    "Tsuchi Studio",
-  ]
+export const CONFIRMATION_SUBJECT = "Welcome to Tsuchi Studio!"
 
+/** Plain-text confirmation, for the one-click Gmail draft. */
+export function confirmationEmail(b: BookingEmailData) {
   return {
     to: b.email,
-    subject: `Your Tsuchi Studio reservation is approved — ${b.workshop}`,
-    body: lines.join("\n"),
+    subject: CONFIRMATION_SUBJECT,
+    body: [...confirmationParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 
@@ -71,7 +65,10 @@ export function scheduleEmail(b: BookingEmailData) {
     "",
     "Here's the full schedule for your upcoming workshop:",
     "",
-    ...detailLines(b),
+    `Workshop: ${b.workshop}`,
+    `Date: ${b.date}`,
+    `Session: ${b.session}`,
+    `Slots: ${b.slots}`,
     "",
     "Please arrive 10-15 minutes before your session starts so we can get you settled in. Wear clothes you don't mind getting messy — clay and dye don't always come out in the wash. All tools and materials are provided.",
     "",

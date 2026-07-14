@@ -9,6 +9,13 @@ export const PERIOD_LABELS: Record<Period, string> = {
   EVENING: "Evening · 4:00–7:00",
 }
 
+/** Just the hours, for prose ("…on Friday from 9:00–12:00"). */
+export const PERIOD_TIMES: Record<Period, string> = {
+  MORNING: "9:00–12:00",
+  AFTERNOON: "1:00–4:00",
+  EVENING: "4:00–7:00",
+}
+
 /**
  * Only confirmed bookings take up a seat — an unpaid (PENDING) booking doesn't
  * hold one, so seats stay open until the admin confirms payment.

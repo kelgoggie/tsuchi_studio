@@ -1,54 +1,18 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { PERIOD_LABELS, parseDateOnly } from "@/lib/booking"
+import { PERIOD_LABELS, PERIOD_TIMES, parseDateOnly } from "@/lib/booking"
 import { fmtDate, fmtDateTime, fmtDay, peso } from "@/lib/format"
-import { confirmationEmail, gmailComposeUrl, scheduleEmail, type BookingEmailData } from "@/lib/email"
-import { setBookingStatus } from "@/app/admin/actions"
+import { gmailComposeUrl, scheduleEmail, type BookingEmailData } from "@/lib/email"
 import BookingFilters from "@/components/admin/BookingFilters"
-import EditBookingButton from "@/components/admin/EditBookingButton"
+import BookingSearch from "@/components/admin/BookingSearch"
+import BookingsTable, { type BookingRowData } from "@/components/admin/BookingsTable"
+import Paginator from "@/components/admin/Paginator"
 import { BookingStatus } from "@/app/generated/prisma/client"
 
 export const dynamic = "force-dynamic"
 
 const PAGE_SIZE = 20
-
-// Match the Google Sheet's single combined status column.
-const STATUS_LABEL: Record<string, string> = {
-  CONFIRMED: "PAID - CONFIRMED",
-  PENDING: "UNPAID",
-  CANCELLED: "CANCELLED",
-}
-const STATUS_STYLES: Record<string, string> = {
-  CONFIRMED: "bg-green-100 text-green-800",
-  PENDING: "bg-gray-200 text-gray-600",
-  CANCELLED: "bg-red-100 text-red-700",
-}
-
-function StatusButton({ id, status, label }: { id: string; status: string; label: string }) {
-  return (
-    <form action={setBookingStatus}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <button className="whitespace-nowrap rounded-full border border-divider px-2.5 py-1 text-xs text-muted transition hover:bg-paper">
-        {label}
-      </button>
-    </form>
-  )
-}
-
-function MailLink({ href, label }: { href: string; label: string }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="whitespace-nowrap rounded-full border border-divider px-2.5 py-1 text-xs text-muted transition hover:border-olive hover:text-olive"
-    >
-      {label}
-    </a>
-  )
-}
 
 export default async function AdminBookingsPage({
   searchParams,
@@ -60,6 +24,7 @@ export default async function AdminBookingsPage({
     page?: string
     from?: string
     to?: string
+    q?: string
   }>
 }) {
   const sp = await searchParams
@@ -68,6 +33,7 @@ export default async function AdminBookingsPage({
   const workshopIds = sp.workshop?.split(",").filter(Boolean) ?? []
   const sort: "asc" | "desc" = sp.sort === "oldest" ? "asc" : "desc" // default: most recent
   const page = Math.max(1, Number(sp.page) || 1)
+  const q = sp.q?.trim() ?? ""
 
   // Date filter runs on the workshop date, which is what the studio plans around.
   const from = sp.from ? parseDateOnly(sp.from) : null
@@ -78,6 +44,17 @@ export default async function AdminBookingsPage({
     ...(workshopIds.length ? { workshopId: { in: workshopIds } } : {}),
     ...(from || to
       ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+      : {}),
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { phone: { contains: q, mode: "insensitive" as const } },
+            { instagram: { contains: q, mode: "insensitive" as const } },
+            { id: { contains: q } },
+          ],
+        }
       : {}),
   }
 
@@ -97,11 +74,55 @@ export default async function AdminBookingsPage({
   ])
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const filtered = statuses.length > 0 || workshopIds.length > 0 || Boolean(from || to)
+  const filtered = statuses.length > 0 || workshopIds.length > 0 || Boolean(from || to) || Boolean(q)
+
+  // Format on the server (PH time) so the client can't hydrate a different string.
+  const rows: BookingRowData[] = bookings.map((b) => {
+    const mail: BookingEmailData = {
+      name: b.name,
+      email: b.email,
+      workshop: b.workshop.name,
+      date: fmtDate(b.date),
+      session: PERIOD_LABELS[b.period],
+      time: PERIOD_TIMES[b.period],
+      slots: b.partySize,
+      bookingFee: b.bookingFee,
+      remainingFee: b.remainingFee,
+    }
+
+    return {
+      booking: {
+        id: b.id,
+        workshopId: b.workshopId,
+        date: b.date.toISOString().slice(0, 10),
+        period: b.period,
+        partySize: b.partySize,
+        name: b.name,
+        email: b.email,
+        phone: b.phone,
+        instagram: b.instagram,
+        notes: b.notes,
+        bookingFee: b.bookingFee,
+        remainingFee: b.remainingFee,
+        status: b.status,
+      },
+      bookedOn: fmtDateTime(b.createdAt),
+      workshopName: b.workshop.name,
+      dateLabel: fmtDate(b.date),
+      dayLabel: fmtDay(b.date),
+      sessionLabel: PERIOD_LABELS[b.period],
+      feeLabel: peso(b.bookingFee),
+      remainingLabel: peso(b.remainingFee),
+      // The confirmation email has a banner, so it goes through the preview page
+      // (a Gmail compose URL can only carry plain text).
+      confirmHref: `/admin/email/${b.id}`,
+      scheduleHref: gmailComposeUrl(scheduleEmail(mail)),
+    }
+  })
 
   const pageHref = (p: number) => {
     const params = new URLSearchParams()
-    for (const key of ["status", "workshop", "sort", "from", "to"] as const) {
+    for (const key of ["status", "workshop", "sort", "from", "to", "q"] as const) {
       if (sp[key]) params.set(key, sp[key] as string)
     }
     params.set("page", String(p))
@@ -119,7 +140,10 @@ export default async function AdminBookingsPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Suspense fallback={null}>
+            <BookingSearch />
+          </Suspense>
           <Suspense fallback={null}>
             <BookingFilters workshops={workshops} />
           </Suspense>
@@ -136,133 +160,15 @@ export default async function AdminBookingsPage({
         <p className="text-sm text-muted">No bookings match these filters.</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-divider bg-card">
-            <table className="w-full min-w-[1800px] text-left text-sm">
-              <thead className="border-b border-divider text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3">Booked On</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Booking ID</th>
-                  <th className="px-4 py-3">Workshop</th>
-                  <th className="px-4 py-3">Workshop Date</th>
-                  <th className="px-4 py-3">Day</th>
-                  <th className="px-4 py-3">Session</th>
-                  <th className="px-4 py-3">Slots</th>
-                  <th className="px-4 py-3">Contact No.</th>
-                  <th className="px-4 py-3">Email Address</th>
-                  <th className="px-4 py-3">Instagram</th>
-                  <th className="px-4 py-3">Booking Fee</th>
-                  <th className="px-4 py-3">Remaining Fee</th>
-                  <th className="px-4 py-3">Booking Status</th>
-                  <th className="px-4 py-3">Actions</th>
-                  <th className="px-4 py-3">Emails</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((b) => {
-                  const mail: BookingEmailData = {
-                    name: b.name,
-                    email: b.email,
-                    workshop: b.workshop.name,
-                    date: fmtDate(b.date),
-                    session: PERIOD_LABELS[b.period],
-                    slots: b.partySize,
-                    bookingFee: b.bookingFee,
-                    remainingFee: b.remainingFee,
-                  }
+          <BookingsTable rows={rows} workshops={workshops} />
 
-                  return (
-                    <tr key={b.id} className="border-b border-divider/60 last:border-0">
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <EditBookingButton
-                            workshops={workshops}
-                            booking={{
-                              id: b.id,
-                              workshopId: b.workshopId,
-                              date: b.date.toISOString().slice(0, 10),
-                              period: b.period,
-                              partySize: b.partySize,
-                              name: b.name,
-                              email: b.email,
-                              phone: b.phone,
-                              instagram: b.instagram,
-                              notes: b.notes,
-                              bookingFee: b.bookingFee,
-                              remainingFee: b.remainingFee,
-                              status: b.status,
-                            }}
-                          />
-                          <span className="text-muted">{fmtDateTime(b.createdAt)}</span>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">{b.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted">{b.id}</td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        {b.workshop.name}
-                        {b.notes && <div className="mt-0.5 text-xs text-muted">{b.notes}</div>}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">{fmtDate(b.date)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">{fmtDay(b.date)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">{PERIOD_LABELS[b.period]}</td>
-                      <td className="px-4 py-3">{b.partySize}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">{b.phone ?? "—"}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">{b.email}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">
-                        {b.instagram ? `@${b.instagram.replace(/^@/, "")}` : "—"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">{peso(b.bookingFee)}</td>
-                      <td className="whitespace-nowrap px-4 py-3">{peso(b.remainingFee)}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[b.status]}`}
-                        >
-                          {STATUS_LABEL[b.status]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1.5">
-                          {b.status !== "CONFIRMED" && <StatusButton id={b.id} status="CONFIRMED" label="Confirm" />}
-                          {b.status !== "CANCELLED" && <StatusButton id={b.id} status="CANCELLED" label="Cancel" />}
-                          {b.status !== "PENDING" && <StatusButton id={b.id} status="PENDING" label="Pending" />}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1.5">
-                          <MailLink href={gmailComposeUrl(confirmationEmail(mail))} label="Send confirmation email" />
-                          <MailLink href={gmailComposeUrl(scheduleEmail(mail))} label="Full schedule email" />
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {pageCount > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm">
-              {page > 1 ? (
-                <Link href={pageHref(page - 1)} className="rounded-full border border-divider px-4 py-1.5 transition hover:bg-card">
-                  ← Previous
-                </Link>
-              ) : (
-                <span className="rounded-full border border-divider px-4 py-1.5 opacity-40">← Previous</span>
-              )}
-
-              <span className="text-muted">
-                Page {page} of {pageCount}
-              </span>
-
-              {page < pageCount ? (
-                <Link href={pageHref(page + 1)} className="rounded-full border border-divider px-4 py-1.5 transition hover:bg-card">
-                  Next →
-                </Link>
-              ) : (
-                <span className="rounded-full border border-divider px-4 py-1.5 opacity-40">Next →</span>
-              )}
-            </div>
-          )}
+          <Paginator
+            page={page}
+            pageCount={pageCount}
+            total={total}
+            pageSize={PAGE_SIZE}
+            href={pageHref}
+          />
         </>
       )}
     </div>

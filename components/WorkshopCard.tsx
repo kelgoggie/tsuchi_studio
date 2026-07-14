@@ -1,8 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 import type { WorkshopOffering } from "@/lib/workshops"
+import BookNowButton from "./BookNowButton"
 
 export default function WorkshopCard({
   workshop,
@@ -94,12 +94,7 @@ export default function WorkshopCard({
               + ₱{addon.price.toLocaleString()} optional: {addon.label}
             </p>
           )}
-          <Link
-            href={`/book?w=${slug}`}
-            className="mt-auto rounded-full bg-olive px-5 py-2 text-center text-sm text-cream transition hover:opacity-90"
-          >
-            book now
-          </Link>
+          <BookNowButton slug={slug} className="mt-auto" />
         </div>
       </div>
     </div>

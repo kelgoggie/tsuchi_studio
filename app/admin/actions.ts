@@ -105,6 +105,7 @@ export async function blockSlots(formData: FormData) {
   }
 
   revalidatePath("/admin/calendar")
+  revalidatePath("/admin/schedule")
 }
 
 export async function removeSlotBlock(formData: FormData) {
@@ -113,6 +114,7 @@ export async function removeSlotBlock(formData: FormData) {
   if (!id) return
   await prisma.slotBlock.delete({ where: { id } })
   revalidatePath("/admin/calendar")
+  revalidatePath("/admin/schedule") // blocks are unblocked from the timetable
 }
 
 export type EditBookingState = { error: string } | { ok: true } | null
