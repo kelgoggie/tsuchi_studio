@@ -5,9 +5,11 @@ import { gmailComposeUrl, type BookingEmailData } from "@/lib/email"
 import { emailMeta, emailPlainText, renderEmailHtml, type EmailKind } from "@/lib/email-html"
 
 /**
- * One click: copies the pretty HTML email to the clipboard AND opens a Gmail
- * compose tab with the recipient + subject filled. The admin pastes (Ctrl+V) to
- * drop the formatted email in — Gmail's compose URL can't carry HTML itself.
+ * One click: copies the formatted email (plain paragraphs, key details in
+ * blue + bold) to the clipboard AND opens a Gmail compose tab with the
+ * recipient + subject filled. The admin pastes (Ctrl+V) to drop the formatted
+ * email in — Gmail's compose URL can't carry HTML itself. If the copy fails,
+ * the plain text is prefilled into the Gmail body so the email is never blank.
  *
  * The copy uses the synchronous execCommand path so it finishes BEFORE the Gmail
  * tab opens; the async Clipboard API can reject once focus leaves this document,
@@ -70,19 +72,20 @@ export default function EmailComposeButton({
   const [copied, setCopied] = useState(false)
 
   function onClick() {
-    const origin = window.location.origin
     const { subject } = emailMeta(kind, data)
-    const html = renderEmailHtml(kind, data, origin)
+    const html = renderEmailHtml(kind, data)
     const text = emailPlainText(kind, data)
 
     // Copy synchronously first, then open Gmail — both inside the click gesture.
-    if (copyHtmlSync(html, text)) {
+    const ok = copyHtmlSync(html, text)
+    if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     }
 
-    // Empty body: the paste is the whole email, no stray text underneath.
-    window.open(gmailComposeUrl({ to: data.email, subject, body: "" }), "_blank", "noopener")
+    // Empty body when the copy worked — the paste is the whole email. If the
+    // copy failed, prefill the plain text so the email can never go out blank.
+    window.open(gmailComposeUrl({ to: data.email, subject, body: ok ? "" : text }), "_blank", "noopener")
   }
 
   return (

@@ -61,6 +61,7 @@ const esc = (s: string) =>
 
 // Named brand colors you can use in the markup below (or write any #hex).
 const COLORS: Record<string, string> = {
+  blue: "#1155cc",
   olive: "#6f7440",
   sage: "#5e5e3c",
   muted: "#6b675c",
@@ -89,51 +90,13 @@ export function formatInline(raw: string): string {
   return s
 }
 
-/** Strips the markup back to plain text (for the clipboard's plain-text copy). */
-export function stripInline(raw: string): string {
-  return raw
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/__(.+?)__/g, "$1")
-    .replace(/\{[^|{}]+\|([^{}]+)\}/g, "$1")
-}
-
-function qrBlock(origin: string): string {
-  // PNG, not SVG — Gmail blocks SVG images, so the QR wouldn't show otherwise.
-  const cells = [
-    { label: "GCash", src: "/assets/Gcash.png" },
-    { label: "Bank", src: "/assets/BPI.png" },
-  ]
-    .map(
-      (q) =>
-        `<div style="${ST.qrCell}"><span style="${ST.qrLabel}">${q.label}</span>` +
-        `<img src="${origin}${q.src}" alt="${q.label} QR code" style="${ST.qrImg}"/></div>`
-    )
-    .join("")
-  return `<div style="${ST.qrRow}">${cells}</div>`
-}
-
 /** Full HTML for the email body — identical to what the preview shows. */
-export function renderEmailHtml(kind: EmailKind, data: BookingEmailData, origin: string): string {
-  const { heading, paragraphs, showQr } = emailMeta(kind, data)
-
-  const body = paragraphs
-    .map((text, i) => {
-      const para = `<p style="${ST.p}">${formatInline(text)}</p>`
-      // QR codes sit right after the "portals below" line.
-      return showQr && i === 1 ? para + qrBlock(origin) : para
-    })
+export function renderEmailHtml(kind: EmailKind, data: BookingEmailData): string {
+  const { paragraphs } = emailMeta(kind, data)
+  const body = [...paragraphs, "— Tsuchi Studio"]
+    .map((text) => `<p style="${ST.p}">${formatInline(text)}</p>`)
     .join("")
-
-  return (
-    `<div style="${ST.outer}"><div style="${ST.wrap}">` +
-    `<img src="${origin}/images/header-img.JPG" alt="Tsuchi Studio" style="${ST.banner}"/>` +
-    `<h1 style="${ST.title}">${esc(heading)}</h1>` +
-    `<div style="${ST.body}">${body}</div>` +
-    `<div style="${ST.footer}">` +
-    `<img src="${origin}/assets/tsuchi%20wordmark.png" alt="Tsuchi Studio" style="${ST.wordmark}"/>` +
-    `</div>` +
-    `</div></div>`
-  )
+  return `<div style="${ST.outer}">${body}</div>`
 }
 
 /** Plain-text fallback (strips markup) for the clipboard's text/plain flavor. */
