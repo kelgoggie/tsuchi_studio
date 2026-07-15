@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { bookingWindow, createBooking, isClosed, isDayOpen, parseDateOnly, PERIODS, PERIOD_LABELS } from "@/lib/booking"
 import { forwardToSheet } from "@/lib/sheets"
-import type { InvoiceVia, Period } from "@/app/generated/prisma/client"
+import type { Period } from "@/app/generated/prisma/client"
 
 export async function POST(req: Request) {
   let body: Record<string, unknown>
@@ -18,25 +18,12 @@ export async function POST(req: Request) {
   const period = String(body.period ?? "") as Period
   const dateStr = String(body.date ?? "")
 
-  // The customer chooses where their invoice goes; that channel is the one we
-  // require, so an Instagram-only booking has no email at all.
-  const invoiceVia: InvoiceVia = body.invoiceVia === "INSTAGRAM" ? "INSTAGRAM" : "EMAIL"
-
-  if (!workshopId || !name) {
-    return NextResponse.json({ error: "Name and workshop are required." }, { status: 400 })
+  // Invoices go by email, so it's required; Instagram is just extra contact info.
+  if (!workshopId || !name || !email) {
+    return NextResponse.json({ error: "Name, email, and workshop are required." }, { status: 400 })
   }
-  if (invoiceVia === "EMAIL") {
-    if (!email) {
-      return NextResponse.json({ error: "Please enter the email for your invoice." }, { status: 400 })
-    }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 })
-    }
-  } else if (!instagram) {
-    return NextResponse.json(
-      { error: "Please enter the Instagram handle for your invoice." },
-      { status: 400 }
-    )
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 })
   }
   if (!(PERIODS as readonly string[]).includes(period)) {
     return NextResponse.json({ error: "Please choose a session." }, { status: 400 })
@@ -74,9 +61,8 @@ export async function POST(req: Request) {
     period,
     partySize,
     name,
-    email: email || undefined,
+    email,
     instagram: instagram || undefined,
-    invoiceVia,
     phone,
     notes,
     bookingFee: feeAmount || null,
@@ -97,7 +83,7 @@ export async function POST(req: Request) {
     phone: phone ?? "",
     email,
     instagram,
-    invoiceVia,
+    invoiceVia: "EMAIL",
     bookingFee: feeAmount,
     bookingStatus: "UNPAID",
   })

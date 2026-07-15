@@ -9,9 +9,20 @@ const STATUSES = [
   { value: "CANCELLED", label: "Cancelled" },
 ]
 
+const SESSIONS = [
+  { value: "MORNING", label: "Morning · 9:00–12:00" },
+  { value: "AFTERNOON", label: "Afternoon · 1:00–4:00" },
+  { value: "EVENING", label: "Evening · 4:00–7:00" },
+]
+
+const pad = (n: number) => String(n).padStart(2, "0")
+const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
 const SORTS = [
   { value: "recent", label: "Most recent" },
   { value: "oldest", label: "Oldest" },
+  { value: "date", label: "Workshop date (soonest)" },
+  { value: "date-desc", label: "Workshop date (latest)" },
 ]
 
 function FilterIcon() {
@@ -136,6 +147,7 @@ export default function BookingFilters({
   const selected = (key: string) => sp.get(key)?.split(",").filter(Boolean) ?? []
   const statuses = selected("status")
   const shops = selected("workshop")
+  const sessions = selected("session")
   const sort = sp.get("sort") ?? "recent"
 
   function push(next: URLSearchParams) {
@@ -167,9 +179,54 @@ export default function BookingFilters({
     push(next)
   }
 
+  // Quick presets set the same from/to the range inputs use, on the workshop date.
+  function preset(kind: "today" | "week" | "upcoming" | "past") {
+    const next = new URLSearchParams(sp.toString())
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const t = ymd(today)
+
+    next.delete("from")
+    next.delete("to")
+    if (kind === "today") {
+      next.set("from", t)
+      next.set("to", t)
+    } else if (kind === "week") {
+      const end = new Date(today)
+      end.setDate(end.getDate() + 6)
+      next.set("from", t)
+      next.set("to", ymd(end))
+    } else if (kind === "upcoming") {
+      next.set("from", t)
+    } else {
+      const y = new Date(today)
+      y.setDate(y.getDate() - 1)
+      next.set("to", ymd(y))
+    }
+    push(next)
+  }
+
   const from = sp.get("from") ?? ""
   const to = sp.get("to") ?? ""
-  const activeCount = statuses.length + shops.length + (from ? 1 : 0) + (to ? 1 : 0)
+  const activeCount =
+    statuses.length + shops.length + sessions.length + (from ? 1 : 0) + (to ? 1 : 0)
+
+  // Which preset (if any) the current from/to corresponds to, so we can light it up.
+  const activePreset = ((): string | null => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const t = ymd(today)
+    const weekEnd = new Date(today)
+    weekEnd.setDate(weekEnd.getDate() + 6)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (from === t && to === t) return "today"
+    if (from === t && to === ymd(weekEnd)) return "week"
+    if (from === t && !to) return "upcoming"
+    if (!from && to === ymd(yesterday)) return "past"
+    return null
+  })()
 
   return (
     <div className="flex items-center gap-2">
@@ -205,8 +262,46 @@ export default function BookingFilters({
             <div className="my-1.5 border-t border-divider" />
 
             <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Session
+            </p>
+            {SESSIONS.map((s) => (
+              <CheckRow
+                key={s.value}
+                checked={sessions.includes(s.value)}
+                label={s.label}
+                onClick={() => toggle("session", s.value)}
+              />
+            ))}
+
+            <div className="my-1.5 border-t border-divider" />
+
+            <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
               Workshop date
             </p>
+            <div className="flex flex-wrap gap-1.5 px-2.5 pb-2">
+              {(
+                [
+                  ["today", "Today"],
+                  ["week", "This week"],
+                  ["upcoming", "Upcoming"],
+                  ["past", "Past"],
+                ] as const
+              ).map(([kind, label]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => preset(kind)}
+                  aria-pressed={activePreset === kind}
+                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                    activePreset === kind
+                      ? "border-olive bg-olive text-cream"
+                      : "border-divider text-muted hover:border-olive hover:text-olive"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="space-y-1.5 px-2.5 pb-1">
               <label className="flex items-center gap-2 text-xs text-muted">
                 <span className="w-8">From</span>

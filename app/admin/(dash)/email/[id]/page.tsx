@@ -5,62 +5,17 @@ import { prisma } from "@/lib/prisma"
 import { PERIOD_LABELS, PERIOD_TIMES } from "@/lib/booking"
 import { fmtDate } from "@/lib/format"
 import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "@/lib/constants"
+import type { BookingEmailData } from "@/lib/email"
 import {
-  CONFIRMATION_SUBJECT,
-  confirmationEmail,
-  confirmationParagraphs,
-  gmailComposeUrl,
-  requestPaymentEmail,
-  requestPaymentParagraphs,
-  requestPaymentSubject,
-  type BookingEmailData,
-} from "@/lib/email"
-import CopyEmailButton from "@/components/admin/CopyEmailButton"
+  EMAIL_KINDS,
+  EMAIL_TAB_LABEL,
+  emailMeta,
+  renderEmailHtml,
+  type EmailKind,
+} from "@/lib/email-html"
+import EmailComposeButton from "@/components/admin/EmailComposeButton"
 
 export const dynamic = "force-dynamic"
-
-// Email clients strip <style> blocks and class names, so the email body is
-// styled entirely inline — what you see here is exactly what gets pasted.
-const S = {
-  wrap: {
-    margin: "0 auto",
-    maxWidth: "600px",
-    backgroundColor: "#fbf1e6",
-    fontFamily: "Georgia, 'Times New Roman', serif",
-    color: "#1b1a17",
-  } as const,
-  bannerImg: { display: "block", width: "100%", height: "auto" } as const,
-  title: {
-    margin: 0,
-    padding: "22px 32px 6px",
-    fontSize: "26px",
-    fontWeight: "normal",
-    color: "#6f7440",
-    textAlign: "center",
-  } as const,
-  p: { margin: "0 0 16px", fontSize: "15px", lineHeight: 1.7, color: "#3a382f" } as const,
-  body: { padding: "10px 32px 8px" } as const,
-  footer: { padding: "8px 32px 32px", textAlign: "center" } as const,
-  wordmark: { width: "150px", height: "auto", margin: "0 auto" } as const,
-  qrRow: { padding: "4px 32px 12px", textAlign: "center" } as const,
-  qrCell: { display: "inline-block", padding: "0 12px", verticalAlign: "top" } as const,
-  qrLabel: {
-    display: "block",
-    margin: "0 0 8px",
-    padding: "8px 22px",
-    backgroundColor: "#6f7440",
-    color: "#f3ebde",
-    borderRadius: "999px",
-    fontSize: "14px",
-  } as const,
-  qrImg: {
-    display: "block",
-    width: "180px",
-    height: "180px",
-    objectFit: "contain",
-    borderRadius: "12px",
-  } as const,
-}
 
 export default async function AdminEmailPage({
   params,
@@ -71,7 +26,9 @@ export default async function AdminEmailPage({
 }) {
   const { id } = await params
   const { type } = await searchParams
-  const isRequest = type === "request"
+  const emailType: EmailKind = (EMAIL_KINDS as readonly string[]).includes(type ?? "")
+    ? (type as EmailKind)
+    : "confirmation"
 
   const booking = await prisma.booking.findUnique({
     where: { id },
@@ -97,11 +54,8 @@ export default async function AdminEmailPage({
     bookingFee: booking.bookingFee,
   }
 
-  const paragraphs = isRequest ? requestPaymentParagraphs(data) : confirmationParagraphs(data)
-  const subject = isRequest ? requestPaymentSubject(data) : CONFIRMATION_SUBJECT
-  const gmail = gmailComposeUrl(isRequest ? requestPaymentEmail(data) : confirmationEmail(data))
-  const heading = isRequest ? "Tsuchi Studio" : "Welcome to Tsuchi Studio!"
-
+  const { subject } = emailMeta(emailType, data)
+  const html = renderEmailHtml(emailType, data, origin)
   const wantsInstagram = booking.invoiceVia === "INSTAGRAM"
 
   return (
@@ -111,22 +65,17 @@ export default async function AdminEmailPage({
       </Link>
 
       <div className="mb-4 mt-6 flex flex-wrap items-center gap-2">
-        <Link
-          href={`/admin/email/${id}?type=request`}
-          className={`rounded-full px-4 py-1.5 text-sm transition ${
-            isRequest ? "bg-olive text-cream" : "border border-divider text-muted hover:border-olive"
-          }`}
-        >
-          Request payment
-        </Link>
-        <Link
-          href={`/admin/email/${id}`}
-          className={`rounded-full px-4 py-1.5 text-sm transition ${
-            !isRequest ? "bg-olive text-cream" : "border border-divider text-muted hover:border-olive"
-          }`}
-        >
-          Confirmation
-        </Link>
+        {EMAIL_KINDS.map((t) => (
+          <Link
+            key={t}
+            href={t === "confirmation" ? `/admin/email/${id}` : `/admin/email/${id}?type=${t}`}
+            className={`rounded-full px-4 py-1.5 text-sm transition ${
+              emailType === t ? "bg-olive text-cream" : "border border-divider text-muted hover:border-olive"
+            }`}
+          >
+            {EMAIL_TAB_LABEL[t]}
+          </Link>
+        ))}
       </div>
 
       <div className="mb-4">
@@ -150,73 +99,31 @@ export default async function AdminEmailPage({
           >
             Instagram
           </a>{" "}
-          (@{(booking.instagram ?? "").replace(/^@/, "")}), not email — copy the text below and DM it to them.
+          (@{(booking.instagram ?? "").replace(/^@/, "")}), not email — copy this and DM it to them.
         </p>
       )}
 
-      <div className="mb-4 rounded-xl border border-divider bg-card p-4 text-sm text-muted">
-        <p className="mb-3">
-          <span className="font-medium text-foreground">Copy email</span> puts the styled version (banner and QR
-          codes) on your clipboard — paste it into a new Gmail message.{" "}
-          <span className="font-medium text-foreground">Open in Gmail</span> prefills a draft instantly, but
-          plain-text only: no banner, no QR codes.
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-divider bg-card p-4">
+        <EmailComposeButton
+          kind={emailType}
+          data={data}
+          label="Copy & open Gmail"
+          className="rounded-full bg-olive px-5 py-2 text-sm text-cream transition hover:opacity-90"
+        />
+        <p className="text-sm text-muted">
+          Copies this pretty email and opens Gmail with the recipient and subject filled — just press{" "}
+          <kbd className="rounded border border-divider bg-paper px-1.5 py-0.5 text-xs">Ctrl</kbd>+
+          <kbd className="rounded border border-divider bg-paper px-1.5 py-0.5 text-xs">V</kbd> to paste.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <CopyEmailButton targetId="email-body" />
-          <a
-            href={gmail}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-divider px-5 py-2 text-sm text-muted transition hover:border-olive hover:text-olive"
-          >
-            Open in Gmail (plain text)
-          </a>
-        </div>
       </div>
 
-      {/* the email itself */}
-      <div className="overflow-hidden rounded-xl border border-divider">
-        <div id="email-body">
-          <div style={S.wrap}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${origin}/images/header-img.JPG`} alt="Tsuchi Studio" style={S.bannerImg} />
+      {/* the email itself — rendered from the exact HTML that gets copied */}
+      <div
+        className="overflow-hidden rounded-xl border border-divider"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
 
-            <h1 style={S.title}>{heading}</h1>
-
-            <div style={S.body}>
-              {paragraphs.map((text, i) => (
-                <p key={i} style={S.p}>
-                  {text}
-                </p>
-              ))}
-            </div>
-
-            {isRequest && (
-              <div style={S.qrRow}>
-                {[
-                  { label: "GCash", src: `${origin}/assets/Gcash.svg` },
-                  { label: "Bank", src: `${origin}/assets/BPI.svg` },
-                ].map((q) => (
-                  <div key={q.label} style={S.qrCell}>
-                    <span style={S.qrLabel}>{q.label}</span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={q.src} alt={`${q.label} QR code`} style={S.qrImg} />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div style={S.footer}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${origin}/assets/tsuchi_word.svg`} alt="Tsuchi Studio" style={S.wordmark} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-3 text-xs text-muted">
-        Instagram in this email points to @{INSTAGRAM_HANDLE}.
-      </p>
+      <p className="mt-3 text-xs text-muted">Instagram in this email points to @{INSTAGRAM_HANDLE}.</p>
     </div>
   )
 }

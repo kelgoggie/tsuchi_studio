@@ -55,8 +55,7 @@ export default function BookNowButton({
 
             <p className="mx-auto mt-4 text-sm leading-relaxed text-muted">
               To confirm your booking and maintain our studio schedules, you will be required to pay the total amount
-              for your class upfront. Booking fees are non-refundable, but you may request a change of schedule up to
-              24 hours before your class.
+              for your class within 24 hours of your booking. Please note that booking fees are non-refundable, but we will allow rescheduling under certain conditions.
             </p>
 
             <div className="mt-7 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-center">

@@ -39,6 +39,17 @@ export function fmtDateTime(d: Date) {
   })
 }
 
+/** Compact instant for tight columns — drops the year. "Sep 21, 8:41 PM". */
+export function fmtDateTimeCompact(d: Date) {
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: STUDIO_TZ,
+  })
+}
+
 export const peso = (n: number | null | undefined) => (n == null ? "—" : `₱${n.toLocaleString()}`)
 
 /** "YYYY-MM-DD" for today in studio time — not the server's timezone. */

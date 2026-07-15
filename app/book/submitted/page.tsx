@@ -22,7 +22,8 @@ export default function BookingSubmittedPage() {
               <p>Thank you for booking a workshop with us.</p>
               <p>
                 Your reservation request has been received and is currently under review. Once your request has been
-                approved, we will send you the payment instructions and QR code for the full class fee.
+                approved, we will send you the payment instructions and QR code for the full class fee via your email address. 
+                Once you receive your QR codes, kindly settle your fees within 24 hours. Please note that we operate on a first-to-pay basis, so be sure to secure your slots as soon as possible!
               </p>
               <p>{PAYMENT_NOTICE}</p>
               <p>Thank you for your patience. We look forward to seeing you at the studio!</p>

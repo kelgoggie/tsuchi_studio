@@ -76,7 +76,6 @@ export default function BookingForm({
   const [email, setEmail] = useState("")
   const [instagram, setInstagram] = useState("")
   const [phone, setPhone] = useState("")
-  const [invoiceVia, setInvoiceVia] = useState<"EMAIL" | "INSTAGRAM">("EMAIL")
   // Only nag once they've left the field — then keep the feedback live as they fix it.
   const [touched, setTouched] = useState<{ email?: boolean; phone?: boolean }>({})
   const [avail, setAvail] = useState<{
@@ -123,9 +122,7 @@ export default function BookingForm({
   const slotsLeft = period ? remainingFor(period) : maxParty
   const overCapacity = !unlimited && partySize > slotsLeft
 
-  // Only the chosen invoice channel is validated — the other is disabled.
-  const emailInvalid =
-    invoiceVia === "EMAIL" && email.trim() !== "" && !EMAIL_RE.test(email.trim())
+  const emailInvalid = email.trim() !== "" && !EMAIL_RE.test(email.trim())
   const phoneInvalid = phone.trim() !== "" && !PHONE_RE.test(phone.trim())
   const emailError = touched.email && emailInvalid ? "Please enter a valid email address." : null
   const phoneError = touched.phone && phoneInvalid ? "Use a PH number, e.g. 0917 123 4567 or +63 917 123 4567." : null
@@ -181,9 +178,8 @@ export default function BookingForm({
         workshopId,
         workshopLabel,
         feeAmount,
-        invoiceVia,
-        email: invoiceVia === "EMAIL" ? email : "",
-        instagram: invoiceVia === "INSTAGRAM" ? instagram : "",
+        email,
+        instagram,
       }),
     })
     const json = await res.json().catch(() => ({}))
@@ -208,61 +204,37 @@ export default function BookingForm({
     <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-3">
       <IconField name="name" required placeholder="Full name" icon={ICONS.name} />
 
+      {/* We send your invoice here. */}
       <IconField
-        name="phone"
-        type="tel"
-        placeholder="Phone"
-        icon={ICONS.phone}
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
-        error={phoneError}
+        name="email"
+        type="email"
+        required
+        placeholder="Email — we'll send your invoice here"
+        icon={ICONS.email}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+        error={emailError}
       />
 
-      {/* Where the invoice goes — only the chosen channel is enabled/required. */}
-      <div className="rounded-lg border border-divider bg-paper p-3">
-        <p className="mb-2 text-sm text-muted">Send me my invoice via</p>
-
-        <div className="space-y-2">
-          {(
-            [
-              { via: "EMAIL", label: "Email", icon: ICONS.email },
-              { via: "INSTAGRAM", label: "Instagram", icon: ICONS.instagram },
-            ] as const
-          ).map(({ via, label, icon }) => {
-            const active = invoiceVia === via
-            const isEmail = via === "EMAIL"
-            return (
-              <div key={via} className="flex items-start gap-2.5">
-                <label className="mt-2.5 flex w-24 shrink-0 cursor-pointer items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="invoiceVia"
-                    value={via}
-                    checked={active}
-                    onChange={() => setInvoiceVia(via)}
-                    className="accent-olive"
-                  />
-                  {label}
-                </label>
-
-                <div className="flex-1">
-                  <IconField
-                    type={isEmail ? "email" : "text"}
-                    placeholder={isEmail ? "you@email.com" : "@yourhandle"}
-                    icon={icon}
-                    disabled={!active}
-                    required={active}
-                    value={isEmail ? email : instagram}
-                    onChange={(e) => (isEmail ? setEmail(e.target.value) : setInstagram(e.target.value))}
-                    onBlur={() => isEmail && setTouched((t) => ({ ...t, email: true }))}
-                    error={isEmail ? emailError : null}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      <div className="grid grid-cols-2 items-start gap-3">
+        <IconField
+          name="phone"
+          type="tel"
+          placeholder="Phone"
+          icon={ICONS.phone}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+          error={phoneError}
+        />
+        <IconField
+          name="instagram"
+          placeholder="Instagram (optional)"
+          icon={ICONS.instagram}
+          value={instagram}
+          onChange={(e) => setInstagram(e.target.value)}
+        />
       </div>
 
       <div>

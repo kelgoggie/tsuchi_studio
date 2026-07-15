@@ -92,12 +92,12 @@ export const CONFIRMATION_SUBJECT = "Welcome to Tsuchi Studio!"
 export function confirmationParagraphs(b: BookingEmailData): string[] {
   return [
     `Hello, ${b.name}!`,
-    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of ${amountOf(
+    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of **${amountOf(
       b
-    )} to reserve ${slotWord(b.slots)} for "${b.workshop}" on ${b.date} from ${
+    )}** to reserve ${slotWord(b.slots)} for {olive|${b.workshop}} on **${b.date} from ${
       b.time
-    }. Wear something comfy, bring your favorite drink, and get ready to build something new with us!`,
-    "Please note that the fee paid is non-refundable, and you may only change your schedule up to a week before your scheduled workshop, and only within the next three months of your initial booking. To maximize your timeslot, please make sure to arrive at least 10-15 minutes before your schedule.",
+    }**. Wear something comfy, and get ready to build something new with us!`,
+    "Please note that the fee paid is {red|non-refundable}, and you may only change your schedule up to a week before your scheduled workshop, and only within the next three months of your initial booking. To maximize your timeslot, please make sure to arrive at least 10-15 minutes before your schedule.",
     "Thank you for deciding to join us at our studio!",
     "See you soon!",
   ]
@@ -108,6 +108,56 @@ export function confirmationEmail(b: BookingEmailData) {
     to: b.email,
     subject: CONFIRMATION_SUBJECT,
     body: [...confirmationParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
+  }
+}
+
+// ----------------------------------------------------------------------- expired
+
+export const EXPIRED_SUBJECT = "Your Tsuchi Studio reservation has expired"
+
+/** Sent when payment isn't made within the 24-hour window. */
+export function expiredParagraphs(b: BookingEmailData): string[] {
+  return [
+    `Hello, ${b.name}!`,
+    `We regret to inform you that your reservation for ${slotWord(b.slots)} for ${b.workshop} on ${
+      b.date
+    } at ${b.time} has expired. The booking fee of ${amountOf(
+      b
+    )} was not paid within the 24 hour reservation window, and your booking has automatically been cancelled.`,
+    "If you would like to book another session at Tsuchi Studio, kindly submit another booking through our official website and be sure to pay the required amount within the set timeframe.",
+    "Thank you so much, and we are hoping for your understanding!",
+  ]
+}
+
+export function expiredEmail(b: BookingEmailData) {
+  return {
+    to: b.email,
+    subject: EXPIRED_SUBJECT,
+    body: [...expiredParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
+  }
+}
+
+// ------------------------------------------------------------------ already filled
+
+export const ALREADY_FILLED_SUBJECT = "An update on your Tsuchi Studio reservation"
+
+/** Sent when the slot filled up before this booking could be confirmed. */
+export function alreadyFilledParagraphs(b: BookingEmailData): string[] {
+  return [
+    `Hello, ${b.name}!`,
+    `Due to the high volume of bookings, we regret to inform you that your reservation for ${slotWord(
+      b.slots
+    )} for ${b.workshop} on ${b.date} at ${b.time} has already been filled by another client.`,
+    "We would be happy to reassign you to our next available booking, or coordinate with you according to your availability within the next three months. To reschedule, kindly reply to this email or contact us via our Instagram or Facebook page.",
+    "Thank you so much! We look forward to assisting you!",
+  ]
+}
+
+export function alreadyFilledEmail(b: BookingEmailData) {
+  return {
+    to: b.email,
+    subject: ALREADY_FILLED_SUBJECT,
+    body: [...alreadyFilledParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 

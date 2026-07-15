@@ -1,13 +1,13 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { PERIOD_LABELS, parseDateOnly } from "@/lib/booking"
-import { fmtDate, fmtDateTime, fmtDay, peso } from "@/lib/format"
+import { PERIODS, PERIOD_LABELS, PERIOD_TIMES, parseDateOnly } from "@/lib/booking"
+import { fmtDate, fmtDateTimeCompact, fmtDay, peso } from "@/lib/format"
 import BookingFilters from "@/components/admin/BookingFilters"
 import BookingSearch from "@/components/admin/BookingSearch"
 import BookingsTable, { type BookingRowData } from "@/components/admin/BookingsTable"
 import Paginator from "@/components/admin/Paginator"
-import { BookingStatus } from "@/app/generated/prisma/client"
+import { BookingStatus, type Period } from "@/app/generated/prisma/client"
 
 export const dynamic = "force-dynamic"
 
@@ -19,6 +19,7 @@ export default async function AdminBookingsPage({
   searchParams: Promise<{
     status?: string
     workshop?: string
+    session?: string
     sort?: string
     page?: string
     from?: string
@@ -30,9 +31,21 @@ export default async function AdminBookingsPage({
 
   const statuses = (sp.status?.split(",") ?? []).filter((s): s is keyof typeof BookingStatus => s in BookingStatus)
   const workshopIds = sp.workshop?.split(",").filter(Boolean) ?? []
-  const sort: "asc" | "desc" = sp.sort === "oldest" ? "asc" : "desc" // default: most recent
+  const periods = (sp.session?.split(",") ?? []).filter((p): p is Period => PERIODS.includes(p as Period))
+  const sort = sp.sort ?? "recent"
   const page = Math.max(1, Number(sp.page) || 1)
   const q = sp.q?.trim() ?? ""
+
+  // "recent"/"oldest" sort by when the booking came in; "date"/"date-desc" by the
+  // workshop date, so the admin can line up what's coming up soonest.
+  const orderBy =
+    sort === "oldest"
+      ? { createdAt: "asc" as const }
+      : sort === "date"
+        ? { date: "asc" as const }
+        : sort === "date-desc"
+          ? { date: "desc" as const }
+          : { createdAt: "desc" as const }
 
   // Date filter runs on the workshop date, which is what the studio plans around.
   const from = sp.from ? parseDateOnly(sp.from) : null
@@ -41,6 +54,7 @@ export default async function AdminBookingsPage({
   const where = {
     ...(statuses.length ? { status: { in: statuses.map((s) => BookingStatus[s]) } } : {}),
     ...(workshopIds.length ? { workshopId: { in: workshopIds } } : {}),
+    ...(periods.length ? { period: { in: periods } } : {}),
     ...(from || to
       ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
       : {}),
@@ -61,7 +75,7 @@ export default async function AdminBookingsPage({
     prisma.booking.findMany({
       where,
       include: { workshop: true },
-      orderBy: { createdAt: sort },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -73,7 +87,8 @@ export default async function AdminBookingsPage({
   ])
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const filtered = statuses.length > 0 || workshopIds.length > 0 || Boolean(from || to) || Boolean(q)
+  const filtered =
+    statuses.length > 0 || workshopIds.length > 0 || periods.length > 0 || Boolean(from || to) || Boolean(q)
 
   // Format on the server (PH time) so the client can't hydrate a different string.
   const rows: BookingRowData[] = bookings.map((b) => {
@@ -92,22 +107,30 @@ export default async function AdminBookingsPage({
         bookingFee: b.bookingFee,
         status: b.status,
       },
-      bookedOn: fmtDateTime(b.createdAt),
+      bookedOn: fmtDateTimeCompact(b.createdAt),
       workshopName: b.workshop.name,
       dateLabel: fmtDate(b.date),
       dayLabel: fmtDay(b.date),
       sessionLabel: PERIOD_LABELS[b.period],
       feeLabel: peso(b.bookingFee),
-      // Both emails have a banner (and the request has QR codes), so they go
-      // through the preview page — a Gmail compose URL is plain text only.
-      requestHref: `/admin/email/${b.id}?type=request`,
-      confirmHref: `/admin/email/${b.id}`,
+      // Everything the email buttons need to build & copy the pretty email.
+      email: {
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        workshop: b.workshop.name,
+        date: fmtDate(b.date),
+        session: PERIOD_LABELS[b.period],
+        time: PERIOD_TIMES[b.period],
+        slots: b.partySize,
+        bookingFee: b.bookingFee,
+      },
     }
   })
 
   const pageHref = (p: number) => {
     const params = new URLSearchParams()
-    for (const key of ["status", "workshop", "sort", "from", "to", "q"] as const) {
+    for (const key of ["status", "workshop", "session", "sort", "from", "to", "q"] as const) {
       if (sp[key]) params.set(key, sp[key] as string)
     }
     params.set("page", String(p))
@@ -145,7 +168,12 @@ export default async function AdminBookingsPage({
         <p className="text-sm text-muted">No bookings match these filters.</p>
       ) : (
         <>
-          <BookingsTable rows={rows} workshops={workshops} />
+          <BookingsTable
+            rows={rows}
+            workshops={workshops}
+            startIndex={(page - 1) * PAGE_SIZE}
+            sort={sort}
+          />
 
           <Paginator
             page={page}
