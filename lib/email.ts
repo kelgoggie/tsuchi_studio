@@ -2,8 +2,8 @@
 // there are two shapes of the same message:
 //
 //   • plain text  → prefilled into a Gmail compose URL (one click, no images)
-//   • HTML        → rendered on /admin/email/<id> and copied into Gmail, which
-//                   keeps the banner, the QR codes and the styling
+//   • HTML        → rendered on /admin/email/<id> and copied into Gmail — plain
+//                   paragraphs with the important details in blue + bold
 //
 // Client-safe: no server-only imports.
 
@@ -45,6 +45,19 @@ const slotWord = (n: number) => `${n} slot${n === 1 ? "" : "s"}`
 const amountOf = (b: BookingEmailData) =>
   b.bookingFee != null ? peso(b.bookingFee) : "the full class fee"
 
+/** Marks an important detail so the HTML email renders it blue + bold. */
+const hl = (s: string) => `{blue|**${s}**}`
+
+/** Strips the inline markup back to plain text (Gmail URL bodies, clipboard text). */
+export function stripInline(raw: string): string {
+  return raw
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/\{[^|{}]+\|([^{}]+)\}/g, "$1")
+}
+
+export const QR_ATTACHMENT_NOTE = "GCash and bank transfer QR codes are attached to this email."
+
 // ---------------------------------------------------------------- request payment
 
 export const requestPaymentSubject = (b: BookingEmailData) => `Tsuchi Studio -- Booking ID ${b.id}`
@@ -53,10 +66,10 @@ export const requestPaymentSubject = (b: BookingEmailData) => `Tsuchi Studio -- 
 export function requestPaymentParagraphs(b: BookingEmailData): string[] {
   return [
     `Hello, ${b.name}!`,
-    `Thank you for choosing Tsuchi Studio to be a part of your creative journey! To confirm your ${slotWord(
-      b.slots
-    )} for ${b.workshop} on ${b.date} at ${b.time}, kindly pay the full amount of ${amountOf(
-      b
+    `Thank you for choosing Tsuchi Studio to be a part of your creative journey! To confirm your ${hl(
+      slotWord(b.slots)
+    )} for ${hl(b.workshop)} on ${hl(`${b.date} at ${b.time}`)}, kindly pay the full amount of ${hl(
+      amountOf(b)
     )} through either of the online payment portals below, and send us a screenshot of your transaction details as proof of payment.`,
     `You may reply to this email with your proof of payment, or send it to us via Instagram: ${INSTAGRAM_URL}. Afterwards, you may expect your confirmation email within 24 hours.`,
     "Thank you so much!",
@@ -64,7 +77,7 @@ export function requestPaymentParagraphs(b: BookingEmailData): string[] {
 }
 
 export function requestPaymentEmail(b: BookingEmailData) {
-  const [greeting, intro, proof, thanks] = requestPaymentParagraphs(b)
+  const [greeting, intro, proof, thanks] = requestPaymentParagraphs(b).map(stripInline)
   return {
     to: b.email,
     subject: requestPaymentSubject(b),
@@ -73,7 +86,7 @@ export function requestPaymentEmail(b: BookingEmailData) {
       "",
       intro,
       "",
-      "GCash and bank transfer QR codes are attached to this email.",
+      QR_ATTACHMENT_NOTE,
       "",
       proof,
       "",
@@ -92,11 +105,11 @@ export const CONFIRMATION_SUBJECT = "Welcome to Tsuchi Studio!"
 export function confirmationParagraphs(b: BookingEmailData): string[] {
   return [
     `Hello, ${b.name}!`,
-    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of **${amountOf(
-      b
-    )}** to reserve ${slotWord(b.slots)} for {olive|${b.workshop}} on **${b.date} from ${
-      b.time
-    }**. Wear something comfy, and get ready to build something new with us!`,
+    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of ${hl(
+      amountOf(b)
+    )} to reserve ${hl(slotWord(b.slots))} for ${hl(b.workshop)} on ${hl(
+      `${b.date} from ${b.time}`
+    )}. Wear something comfy, and get ready to build something new with us!`,
     "Please note that the fee paid is {red|non-refundable}, and you may only change your schedule up to a week before your scheduled workshop, and only within the next three months of your initial booking. To maximize your timeslot, please make sure to arrive at least 10-15 minutes before your schedule.",
     "Thank you for deciding to join us at our studio!",
     "See you soon!",
@@ -107,7 +120,7 @@ export function confirmationEmail(b: BookingEmailData) {
   return {
     to: b.email,
     subject: CONFIRMATION_SUBJECT,
-    body: [...confirmationParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
+    body: [...confirmationParagraphs(b).map(stripInline), "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 
@@ -119,10 +132,10 @@ export const EXPIRED_SUBJECT = "Your Tsuchi Studio reservation has expired"
 export function expiredParagraphs(b: BookingEmailData): string[] {
   return [
     `Hello, ${b.name}!`,
-    `We regret to inform you that your reservation for ${slotWord(b.slots)} for ${b.workshop} on ${
-      b.date
-    } at ${b.time} has expired. The booking fee of ${amountOf(
-      b
+    `We regret to inform you that your reservation for ${hl(slotWord(b.slots))} for ${hl(
+      b.workshop
+    )} on ${hl(`${b.date} at ${b.time}`)} has expired. The booking fee of ${hl(
+      amountOf(b)
     )} was not paid within the 24 hour reservation window, and your booking has automatically been cancelled.`,
     "If you would like to book another session at Tsuchi Studio, kindly submit another booking through our official website and be sure to pay the required amount within the set timeframe.",
     "Thank you so much, and we are hoping for your understanding!",
@@ -133,7 +146,7 @@ export function expiredEmail(b: BookingEmailData) {
   return {
     to: b.email,
     subject: EXPIRED_SUBJECT,
-    body: [...expiredParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
+    body: [...expiredParagraphs(b).map(stripInline), "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 
@@ -145,9 +158,9 @@ export const ALREADY_FILLED_SUBJECT = "An update on your Tsuchi Studio reservati
 export function alreadyFilledParagraphs(b: BookingEmailData): string[] {
   return [
     `Hello, ${b.name}!`,
-    `Due to the high volume of bookings, we regret to inform you that your reservation for ${slotWord(
-      b.slots
-    )} for ${b.workshop} on ${b.date} at ${b.time} has already been filled by another client.`,
+    `Due to the high volume of bookings, we regret to inform you that your reservation for ${hl(
+      slotWord(b.slots)
+    )} for ${hl(b.workshop)} on ${hl(`${b.date} at ${b.time}`)} has already been filled by another client.`,
     "We would be happy to reassign you to our next available booking, or coordinate with you according to your availability within the next three months. To reschedule, kindly reply to this email or contact us via our Instagram or Facebook page.",
     "Thank you so much! We look forward to assisting you!",
   ]
@@ -157,7 +170,7 @@ export function alreadyFilledEmail(b: BookingEmailData) {
   return {
     to: b.email,
     subject: ALREADY_FILLED_SUBJECT,
-    body: [...alreadyFilledParagraphs(b), "", "— Tsuchi Studio"].join("\n\n"),
+    body: [...alreadyFilledParagraphs(b).map(stripInline), "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 

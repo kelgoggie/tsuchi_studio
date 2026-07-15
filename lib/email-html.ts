@@ -1,9 +1,9 @@
 // Renders an email as an HTML string, so both the admin preview and the
-// one-click "copy + open Gmail" button produce the exact same pretty email.
+// one-click "copy + open Gmail" button produce the exact same email: plain
+// paragraphs with the important details in blue + bold. No images — pasted
+// image-heavy emails were coming out blank in Gmail.
 //
-// Client-safe: no server-only imports. Image src needs an absolute origin
-// (an email client can't resolve "/images/…"); callers pass window.location.origin
-// on the client, or the request host on the server.
+// Client-safe: no server-only imports.
 
 import {
   ALREADY_FILLED_SUBJECT,
@@ -12,8 +12,10 @@ import {
   confirmationParagraphs,
   EXPIRED_SUBJECT,
   expiredParagraphs,
+  QR_ATTACHMENT_NOTE,
   requestPaymentParagraphs,
   requestPaymentSubject,
+  stripInline,
   type BookingEmailData,
 } from "@/lib/email"
 
@@ -28,58 +30,30 @@ export const EMAIL_TAB_LABEL: Record<EmailKind, string> = {
   filled: "Filled",
 }
 
-/** Heading, subject, paragraphs and QR flag for one email — the single switch. */
+/** Subject and paragraphs for one email — the single switch. The payment email
+ * gets the QR note right after the intro, same spot the plain body puts it. */
 export function emailMeta(kind: EmailKind, data: BookingEmailData) {
   switch (kind) {
-    case "request":
+    case "request": {
+      const [greeting, intro, ...rest] = requestPaymentParagraphs(data)
       return {
-        heading: "Tsuchi Studio",
         subject: requestPaymentSubject(data),
-        paragraphs: requestPaymentParagraphs(data),
-        showQr: true,
+        paragraphs: [greeting, intro, QR_ATTACHMENT_NOTE, ...rest],
       }
+    }
     case "expired":
-      return {
-        heading: "Reservation Expired",
-        subject: EXPIRED_SUBJECT,
-        paragraphs: expiredParagraphs(data),
-        showQr: false,
-      }
+      return { subject: EXPIRED_SUBJECT, paragraphs: expiredParagraphs(data) }
     case "filled":
-      return {
-        heading: "Reservation Update",
-        subject: ALREADY_FILLED_SUBJECT,
-        paragraphs: alreadyFilledParagraphs(data),
-        showQr: false,
-      }
+      return { subject: ALREADY_FILLED_SUBJECT, paragraphs: alreadyFilledParagraphs(data) }
     default:
-      return {
-        heading: "Welcome to Tsuchi Studio!",
-        subject: CONFIRMATION_SUBJECT,
-        paragraphs: confirmationParagraphs(data),
-        showQr: false,
-      }
+      return { subject: CONFIRMATION_SUBJECT, paragraphs: confirmationParagraphs(data) }
   }
 }
 
 // Inline styles — email clients strip <style> blocks and class names.
 const ST = {
-  outer:
-    "background-color:#fbf1e6;padding:0 0 8px;font-family:Georgia,'Times New Roman',serif;color:#1b1a17",
-  wrap: "margin:0 auto;max-width:620px",
-  banner: "display:block;width:100%;height:auto",
-  title:
-    "margin:0;padding:24px 40px 6px;font-size:27px;font-weight:normal;color:#6f7440;text-align:center",
-  p: "margin:0 0 16px;font-size:15px;line-height:1.7;color:#3a382f",
-  body: "padding:10px 40px 8px",
-  footer: "padding:14px 40px 34px;text-align:center",
-  // The wordmark PNG — Gmail blocks SVG, so this is the raster version.
-  wordmark: "width:180px;height:auto;margin:0 auto",
-  qrRow: "padding:6px 40px 14px;text-align:center",
-  qrCell: "display:inline-block;padding:0 12px;vertical-align:top",
-  qrLabel:
-    "display:block;margin:0 0 8px;padding:8px 22px;background-color:#6f7440;color:#f3ebde;border-radius:999px;font-size:14px",
-  qrImg: "display:block;width:180px;height:180px;object-fit:contain;border-radius:12px",
+  outer: "font-family:Arial,Helvetica,sans-serif;color:#1b1a17;padding:20px 24px",
+  p: "margin:0 0 16px;font-size:14px;line-height:1.7",
 }
 
 const esc = (s: string) =>

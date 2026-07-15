@@ -32,6 +32,16 @@ function Svg({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** Stacked up/down chevrons; the active direction is solid, the other faded. */
+function SortChevrons({ dir }: { dir: "asc" | "desc" | null }) {
+  return (
+    <svg width="10" height="14" viewBox="0 0 10 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block shrink-0">
+      <path d="m2 5 3-3 3 3" className={dir === "asc" ? "" : "opacity-30"} />
+      <path d="m2 9 3 3 3-3" className={dir === "desc" ? "" : "opacity-30"} />
+    </svg>
+  )
+}
+
 const MAIL_ICONS = {
   payment: <Svg><path d="M6 4h7a4 4 0 0 1 0 8H6M6 8h9M6 12h7M8 4v16" /></Svg>,
   confirmation: <Svg><path d="M20 6 9 17l-5-5" /></Svg>,
@@ -56,7 +66,7 @@ type Column = {
   key: string
   label: string
   width: number
-  /** true for the sortable Workshop Date column. */
+  /** true for the sortable date columns (Booked On, Workshop Date). */
   sortable?: boolean
   /** Right-side action cells shouldn't be clipped mid-button. */
   noTruncate?: boolean
@@ -65,7 +75,7 @@ type Column = {
 // Data columns (chevron + "#" are separate, fixed leading columns). Defaults are
 // tuned so the Actions and Emails buttons each sit on one row.
 const COLUMNS: Column[] = [
-  { key: "bookedOn", label: "Booked On", width: 120 },
+  { key: "bookedOn", label: "Booked On", width: 120, sortable: true },
   { key: "name", label: "Name", width: 140 },
   { key: "workshop", label: "Workshop", width: 130 },
   { key: "date", label: "Workshop Date", width: 150, sortable: true },
@@ -295,12 +305,22 @@ export default function BookingsTable({
     }
   }
 
-  // Clicking Workshop Date cycles soonest-first → latest-first.
-  const dateActive = sort === "date" || sort === "date-desc"
-  const arrow = sort === "date" ? " ↑" : sort === "date-desc" ? " ↓" : ""
-  function sortByDate() {
+  // Each sortable heading toggles between its two orders; the first click uses
+  // the column's most useful direction (soonest workshops, newest bookings).
+  const SORTS: Record<string, { asc: string; desc: string; first: string; title: string }> = {
+    bookedOn: { asc: "oldest", desc: "recent", first: "recent", title: "Sort by booked-on date" },
+    date: { asc: "date", desc: "date-desc", first: "date", title: "Sort by workshop date" },
+  }
+
+  function sortDir(key: string): "asc" | "desc" | null {
+    const s = SORTS[key]
+    return sort === s.asc ? "asc" : sort === s.desc ? "desc" : null
+  }
+
+  function toggleSort(key: string) {
+    const s = SORTS[key]
     const next = new URLSearchParams(sp.toString())
-    next.set("sort", sort === "date" ? "date-desc" : "date")
+    next.set("sort", sort === s.asc ? s.desc : sort === s.desc ? s.asc : s.first)
     next.delete("page")
     router.push(`/admin?${next.toString()}`)
   }
@@ -340,12 +360,12 @@ export default function BookingsTable({
                   {c.sortable ? (
                     <button
                       type="button"
-                      onClick={sortByDate}
-                      title="Sort by workshop date"
-                      className={`-mx-1 rounded px-1 py-0.5 uppercase tracking-wide transition hover:text-olive ${dateActive ? "text-olive" : ""}`}
+                      onClick={() => toggleSort(c.key)}
+                      title={SORTS[c.key].title}
+                      className={`-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 uppercase tracking-wide transition hover:text-olive ${sortDir(c.key) ? "text-olive" : ""}`}
                     >
                       {c.label}
-                      {arrow}
+                      <SortChevrons dir={sortDir(c.key)} />
                     </button>
                   ) : (
                     <span className="block truncate">{c.label}</span>
