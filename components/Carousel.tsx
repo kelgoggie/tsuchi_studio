@@ -66,8 +66,9 @@ export default function Carousel() {
         </svg>
       </button>
 
-      {/* slides */}
-      <div className="relative">
+      {/* slides — overflow-hidden so the translated-off inactive slides don't
+          poke past the viewport and give the page a horizontal wiggle */}
+      <div className="relative overflow-hidden">
         {pages.map((group, i) => (
           <div
             key={i}

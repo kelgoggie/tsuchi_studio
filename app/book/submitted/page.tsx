@@ -18,7 +18,8 @@ export default function BookingSubmittedPage() {
           <div className="mx-auto max-w-2xl py-10 text-center md:py-16">
             <h1 className="font-script text-4xl leading-tight md:text-5xl">Reservation Submitted!</h1>
 
-            <div className="mt-8 space-y-4 text-justify text-sm leading-relaxed text-muted">
+            {/* justified text opens ugly gaps in narrow columns — left-align on phones */}
+            <div className="mt-8 space-y-4 text-left text-sm leading-relaxed text-muted sm:text-justify">
               <p>Thank you for booking a workshop with us.</p>
               <p>
                 Your reservation request has been received and is currently under review. Once your request has been

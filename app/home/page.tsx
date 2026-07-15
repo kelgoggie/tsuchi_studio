@@ -55,8 +55,9 @@ export default function HomePage() {
                 Tsuchi is an independent multidisciplinary arts studio <b>rooted in nature</b>.
               </p>
               <p>
-                Perfection is not the pursuit, but connection. A quiet reverence for what is <b>slightly off, slightly worn, and deeply felt </b>. <p>Tsuchi invites a deeper appreciation for the objects that live alongside us.</p>
+                Perfection is not the pursuit, but connection. A quiet reverence for what is <b>slightly off, slightly worn, and deeply felt</b>.
               </p>
+              <p>Tsuchi invites a deeper appreciation for the objects that live alongside us.</p>
             </div>
           </section>
 

@@ -7,7 +7,7 @@
 //
 // Client-safe: no server-only imports.
 
-import { INSTAGRAM_URL, PAYMENT_NOTICE } from "@/lib/constants"
+import { PAYMENT_NOTICE } from "@/lib/constants"
 
 export type BookingEmailData = {
   id: string
@@ -60,6 +60,9 @@ export function stripInline(raw: string): string {
 
 export const QR_ATTACHMENT_NOTE = "GCash and bank transfer QR codes are attached to this email."
 
+/** Index of the payment-email paragraph the QR codes sit after. */
+export const QR_AFTER_INDEX = 2
+
 // ---------------------------------------------------------------- request payment
 
 export const requestPaymentSubject = (b: BookingEmailData) => `Tsuchi Studio -- Booking ID ${b.id}`
@@ -67,35 +70,28 @@ export const requestPaymentSubject = (b: BookingEmailData) => `Tsuchi Studio -- 
 /** Asks the customer to pay the full amount and send proof. */
 export function requestPaymentParagraphs(b: BookingEmailData): string[] {
   return [
-    `Hello, **${b.name}**!`,
-    `Thank you for choosing Tsuchi Studio to be a part of your creative journey! To confirm your **${slotWord(
-      b.slots
-    )}** for ${hl(b.workshop)} on ${hl(`${b.date} at ${b.time}`)}, kindly pay the full amount of **${amountOf(
+    `Hello **${b.name}**,`,
+    "Thank you for choosing Tsuchi Studio to be a part of your creative journey!",
+    `To confirm your **${slotWord(b.slots)}** for our ${hl(b.workshop)} Workshop on ${hl(
+      `${b.date} from ${b.time}`
+    )}, kindly pay the full amount of **${amountOf(
       b
-    )}** through either of the online payment portals below, and send us a screenshot of your transaction details as proof of payment.`,
-    `You may reply to this email with your proof of payment, or send it to us via [Instagram](${INSTAGRAM_URL}). Afterwards, you may expect your confirmation email within 24 hours.`,
-    "Thank you so much!",
+    )}** through either of the online payment methods below and send us a screenshot of your transaction as proof of payment.`,
+    "{red|Please note that workshop fees are non-refundable once the payment has been made.}",
+    "To secure your reservation, please complete your payment within 24 hours of receiving this email. After the 24-hour grace period, your reservation will automatically be released, and the slot may be offered to another guest. If you would still like to join the workshop after the grace period, please submit a new booking request or contact us before making any payment.",
+    "You may reply to this email with your proof of payment. Once we've verified your payment, you can expect to receive your booking confirmation email within 24 hours.",
+    "Thank you, and we look forward to creating with you!",
   ]
 }
 
 export function requestPaymentEmail(b: BookingEmailData) {
-  const [greeting, intro, proof, thanks] = requestPaymentParagraphs(b).map(stripInline)
+  const paragraphs = requestPaymentParagraphs(b).map(stripInline)
+  // Plain text can't embed the QR images, so point at the attachments instead.
+  paragraphs.splice(QR_AFTER_INDEX + 1, 0, QR_ATTACHMENT_NOTE)
   return {
     to: b.email,
     subject: requestPaymentSubject(b),
-    body: [
-      greeting,
-      "",
-      intro,
-      "",
-      QR_ATTACHMENT_NOTE,
-      "",
-      proof,
-      "",
-      thanks,
-      "",
-      "— Tsuchi Studio",
-    ].join("\n"),
+    body: [...paragraphs, "", "— Tsuchi Studio"].join("\n\n"),
   }
 }
 
@@ -106,15 +102,16 @@ export const CONFIRMATION_SUBJECT = "Welcome to Tsuchi Studio!"
 /** Sent once payment is verified. */
 export function confirmationParagraphs(b: BookingEmailData): string[] {
   return [
-    `Hello, **${b.name}**!`,
-    `Welcome to Tsuchi Studio! We're sending you this email to confirm your payment of **${amountOf(
+    `Hi **${b.name}**!`,
+    "Welcome to Tsuchi Studio! We're excited to have you join us.",
+    `This email confirms that we've received your payment of **${amountOf(
       b
-    )}** to reserve **${slotWord(b.slots)}** for ${hl(b.workshop)} on ${hl(
+    )}** to reserve **${slotWord(b.slots)}** for our ${hl(b.workshop)} Workshop on ${hl(
       `${b.date} from ${b.time}`
-    )}. Wear something comfy, and get ready to build something new with us!`,
-    "{red|Please note that the fee paid is non-refundable, and you may only change your schedule up to a week before your scheduled workshop, and only within the next three months of your initial booking. To maximize your timeslot, please make sure to arrive at least 10-15 minutes before your schedule.}",
-    "Thank you for deciding to join us at our studio!",
-    "See you soon!",
+    )}.`,
+    "To help you make the most of your session, please arrive 10-15 minutes before your scheduled workshop. We also recommend wearing clothes that you're comfortable getting dirty, as our studio crafts can get messy.",
+    "{red|Please note that your workshop is non-refundable. If you need to reschedule, you may do so up to one week before your workshop date, and your new booking date must fall within three months of your original reservation.}",
+    "Thank you for choosing Tsuchi Studio to be a part of your creative journey. We can't wait to create with you!",
   ]
 }
 
@@ -133,14 +130,15 @@ export const EXPIRED_SUBJECT = "Your Tsuchi Studio reservation has expired"
 /** Sent when payment isn't made within the 24-hour window. */
 export function expiredParagraphs(b: BookingEmailData): string[] {
   return [
-    `Hello, **${b.name}**!`,
-    `We regret to inform you that your reservation for **${slotWord(b.slots)}** for ${hl(
+    `Hello **${b.name}**,`,
+    `We regret to inform you that your reservation for **${slotWord(b.slots)}** for our ${hl(
       b.workshop
-    )} on ${hl(`${b.date} at ${b.time}`)} has expired. The booking fee of **${amountOf(
+    )} Workshop on ${hl(`${b.date} from ${b.time}`)} has expired.`,
+    `As we did not receive the required payment of **${amountOf(
       b
-    )}** was not paid within the 24 hour reservation window, and your booking has automatically been cancelled.`,
-    "If you would like to book another session at Tsuchi Studio, kindly submit another booking through our official website and be sure to pay the required amount within the set timeframe.",
-    "Thank you so much, and we are hoping for your understanding!",
+    )}** within the 24-hour reservation window, your reservation has been released and the slot may be offered to another guest now.`,
+    "If you would still like to join a workshop at Tsuchi Studio, we'd love to have you! Simply submit a new booking through our official website. Once your new reservation is accepted, please complete your payment within the specified timeframe to secure your booking.",
+    "Thank you for your understanding, and we hope to welcome you to the studio soon!",
   ]
 }
 
@@ -159,12 +157,12 @@ export const ALREADY_FILLED_SUBJECT = "An update on your Tsuchi Studio reservati
 /** Sent when the slot filled up before this booking could be confirmed. */
 export function alreadyFilledParagraphs(b: BookingEmailData): string[] {
   return [
-    `Hello, **${b.name}**!`,
-    `Due to the high volume of bookings, we regret to inform you that your reservation for **${slotWord(
+    `Hello **${b.name}**,`,
+    `Due to the high volume of bookings, we regret to inform you that the workshop schedule you have requested for **${slotWord(
       b.slots
-    )}** for ${hl(b.workshop)} on ${hl(`${b.date} at ${b.time}`)} has already been filled by another client.`,
-    "We would be happy to reassign you to our next available booking, or coordinate with you according to your availability within the next three months. To reschedule, kindly reply to this email or contact us via our Instagram or Facebook page.",
-    "Thank you so much! We look forward to assisting you!",
+    )}** of our ${hl(b.workshop)} Workshop on ${hl(`${b.date} from ${b.time}`)} is no longer available.`,
+    "If you'd still like to join a workshop at Tsuchi Studio, we'd be delighted to have you! Please submit a new booking through our official website, where you can choose another available schedule that best fits your availability within the next three months.",
+    "Thank you for your understanding. We look forward to welcoming you to Tsuchi Studio soon!",
   ]
 }
 

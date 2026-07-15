@@ -4,7 +4,7 @@ import ExploreButton from "./ExploreButton"
 export default function Header({ compact = false }: { compact?: boolean }) {
   return (
     <header
-      className={`relative w-full overflow-hidden bg-cover bg-fixed bg-bottom sm:bg-center ${
+      className={`relative w-full overflow-hidden bg-cover bg-bottom sm:bg-center md:bg-fixed ${
         compact ? "h-40 sm:h-48 md:h-52" : "h-svh"
       }`}
       style={{ backgroundImage: "url('/images/header-img.JPG')" }}

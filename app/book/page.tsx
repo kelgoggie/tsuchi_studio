@@ -54,7 +54,7 @@ export default async function BookPage({
                   </div>
                   <h1 className="mt-4 font-script text-3xl leading-tight md:text-4xl">{workshop.titleScript}</h1>
                   {capacityFor(caps, workshop.workshopId) < 1000 && (
-                    <p className="text-xs text-muted">
+                    <p className="mt-1 text-xs text-muted">
                       max. {capacityFor(caps, workshop.workshopId)} people per timeslot
                     </p>
                   )}

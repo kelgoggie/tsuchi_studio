@@ -14,6 +14,7 @@ import {
   confirmationParagraphs,
   EXPIRED_SUBJECT,
   expiredParagraphs,
+  QR_AFTER_INDEX,
   QR_ATTACHMENT_NOTE,
   requestPaymentParagraphs,
   requestPaymentSubject,
@@ -53,17 +54,22 @@ export function emailMeta(kind: EmailKind, data: BookingEmailData) {
 // Inline styles — email clients strip <style> blocks and class names.
 const ST = {
   // Explicit white background — without it, Chrome's copy carries the admin
-  // page's cream background into the pasted email.
-  outer: "background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1b1a17;padding:20px 24px",
+  // page's cream background into the pasted email. Media queries don't survive
+  // email clients, so mobile-friendliness is all here: a max-width that keeps
+  // desktop lines readable while phones get the full width, slimmer side
+  // padding, and images capped at 100% so nothing overflows a narrow screen.
+  outer:
+    "background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1b1a17;padding:20px 16px;max-width:620px;margin:0 auto",
   p: "margin:0 0 16px;font-size:16px;line-height:1.7",
-  qrRow: "padding:2px 0 14px;text-align:center",
-  qrCell: "display:inline-block;padding:0 12px;vertical-align:top",
+  qrRow: "padding:2px 0 8px;text-align:center",
+  // Bottom padding keeps the cells breathing when a narrow screen stacks them.
+  qrCell: "display:inline-block;padding:0 8px 14px;vertical-align:top",
   qrLabel:
     "display:block;margin:0 0 8px;padding:8px 22px;background-color:#6f7440;color:#f3ebde;border-radius:999px;font-size:14px",
-  qrImg: "display:block;width:180px;height:180px;object-fit:contain;border-radius:12px",
-  footer: "padding:10px 0 6px",
+  qrImg: "display:block;width:180px;max-width:100%;height:180px;object-fit:contain;border-radius:12px",
+  footer: "padding:6px 0",
   // The wordmark PNG — Gmail blocks SVG, so this is the raster version.
-  wordmark: "width:180px;height:auto",
+  wordmark: "width:180px;max-width:60%;height:auto",
 }
 
 const esc = (s: string) =>
@@ -106,10 +112,13 @@ export function formatInline(raw: string): string {
 }
 
 function qrBlock(origin: string): string {
-  // PNG, not SVG — Gmail blocks SVG images, so the QR wouldn't show otherwise.
+  // The /assets/email versions have a white background baked into the pixels —
+  // Gmail's dark mode recolors CSS backgrounds but never image pixels, so the
+  // transparent originals would sit illegibly on a dark canvas. (PNG, not SVG —
+  // Gmail blocks SVG images.)
   const cells = [
-    { label: "GCash", src: "/assets/Gcash.png" },
-    { label: "Bank", src: "/assets/BPI.png" },
+    { label: "GCash", src: "/assets/email/gcash.png" },
+    { label: "Bank", src: "/assets/email/bpi.png" },
   ]
     .map(
       (q) =>
@@ -126,13 +135,13 @@ export function renderEmailHtml(kind: EmailKind, data: BookingEmailData, origin:
   const body = [...paragraphs, "— Tsuchi Studio"]
     .map((text, i) => {
       const para = `<p style="${ST.p}">${formatInline(text)}</p>`
-      // QR codes sit right after the "portals below" line.
-      return showQr && i === 1 ? para + qrBlock(origin) : para
+      // QR codes sit right after the "payment methods below" line.
+      return showQr && i === QR_AFTER_INDEX ? para + qrBlock(origin) : para
     })
     .join("")
   return (
     `<div style="${ST.outer}">${body}` +
-    `<div style="${ST.footer}"><img src="${origin}/assets/tsuchi%20wordmark.png" alt="Tsuchi Studio" style="${ST.wordmark}"/></div>` +
+    `<div style="${ST.footer}"><img src="${origin}/assets/email/wordmark.png" alt="Tsuchi Studio" style="${ST.wordmark}"/></div>` +
     `</div>`
   )
 }
@@ -142,6 +151,6 @@ export function emailPlainText(kind: EmailKind, data: BookingEmailData): string 
   const { paragraphs, showQr } = emailMeta(kind, data)
   const parts = paragraphs.map(stripInline)
   // Plain text can't embed the QR images, so point at the attachments instead.
-  if (showQr) parts.splice(2, 0, QR_ATTACHMENT_NOTE)
+  if (showQr) parts.splice(QR_AFTER_INDEX + 1, 0, QR_ATTACHMENT_NOTE)
   return parts.join("\n\n") + "\n\n— Tsuchi Studio"
 }

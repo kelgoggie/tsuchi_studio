@@ -48,7 +48,9 @@ export async function POST(req: Request) {
 
   const partySize = Math.max(1, Math.min(20, Number(body.partySize) || 1))
   const phone = body.phone ? String(body.phone).trim() : undefined
-  const notes = body.notes ? String(body.notes).trim() : undefined
+  // The form caps typed notes at 140 chars and prefixes the workshop/add-on
+  // labels; 300 leaves room for those while stopping oversized direct POSTs.
+  const notes = body.notes ? String(body.notes).trim().slice(0, 300) : undefined
 
   // The class is paid in full upfront, so this is the whole fee.
   const feeAmount = Number(body.feeAmount) || 0

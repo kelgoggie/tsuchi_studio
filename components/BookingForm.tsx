@@ -217,7 +217,8 @@ export default function BookingForm({
         error={emailError}
       />
 
-      <div className="grid grid-cols-2 items-start gap-3">
+      {/* stacked on phones — side by side the placeholders get clipped */}
+      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
         <IconField
           name="phone"
           type="tel"
@@ -318,7 +319,13 @@ export default function BookingForm({
         </label>
       )}
 
-      <textarea name="notes" placeholder="Anything we should know? (optional)" rows={2} className={FIELD} />
+      <textarea
+        name="notes"
+        placeholder="Anything we should know? (optional)"
+        rows={2}
+        maxLength={140}
+        className={FIELD}
+      />
 
       <div className="rounded-lg bg-card px-3 py-2 text-sm">
         <div className="flex justify-between text-xs text-muted">
