@@ -5,11 +5,11 @@ import { gmailComposeUrl, type BookingEmailData } from "@/lib/email"
 import { emailMeta, emailPlainText, renderEmailHtml, type EmailKind } from "@/lib/email-html"
 
 /**
- * One click: copies the formatted email (plain paragraphs, key details in
- * blue + bold) to the clipboard AND opens a Gmail compose tab with the
- * recipient + subject filled. The admin pastes (Ctrl+V) to drop the formatted
- * email in — Gmail's compose URL can't carry HTML itself. If the copy fails,
- * the plain text is prefilled into the Gmail body so the email is never blank.
+ * One click: copies the formatted email (bold/blue/red highlights, QR codes,
+ * wordmark) to the clipboard AND opens a Gmail compose tab with the recipient
+ * + subject filled. The admin pastes (Ctrl+V) to drop the formatted email in —
+ * Gmail's compose URL can't carry HTML itself. If the copy fails, the plain
+ * text is prefilled into the Gmail body so the email is never blank.
  *
  * The copy uses the synchronous execCommand path so it finishes BEFORE the Gmail
  * tab opens; the async Clipboard API can reject once focus leaves this document,
@@ -73,7 +73,7 @@ export default function EmailComposeButton({
 
   function onClick() {
     const { subject } = emailMeta(kind, data)
-    const html = renderEmailHtml(kind, data)
+    const html = renderEmailHtml(kind, data, window.location.origin)
     const text = emailPlainText(kind, data)
 
     // Copy synchronously first, then open Gmail — both inside the click gesture.
@@ -92,7 +92,7 @@ export default function EmailComposeButton({
     <button
       type="button"
       onClick={onClick}
-      title="Copies the pretty email, then opens Gmail — paste with Ctrl+V"
+      title="Copies the formatted email, then opens Gmail — paste with Ctrl+V"
       className={className}
     >
       {icon}

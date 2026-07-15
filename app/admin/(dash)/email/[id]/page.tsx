@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { PERIOD_LABELS, PERIOD_TIMES } from "@/lib/booking"
@@ -35,6 +36,12 @@ export default async function AdminEmailPage({
   })
   if (!booking) notFound()
 
+  // Absolute URLs — an email client can't resolve "/assets/…".
+  const h = await headers()
+  const host = h.get("host") ?? "localhost:3000"
+  const proto = host.startsWith("localhost") ? "http" : "https"
+  const origin = `${proto}://${host}`
+
   const data: BookingEmailData = {
     id: booking.id,
     name: booking.name,
@@ -48,7 +55,7 @@ export default async function AdminEmailPage({
   }
 
   const { subject } = emailMeta(emailType, data)
-  const html = renderEmailHtml(emailType, data)
+  const html = renderEmailHtml(emailType, data, origin)
   const wantsInstagram = booking.invoiceVia === "INSTAGRAM"
 
   return (
