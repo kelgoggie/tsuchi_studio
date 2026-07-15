@@ -55,6 +55,7 @@ export function stripInline(raw: string): string {
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/__(.+?)__/g, "$1")
     .replace(/\{[^|{}]+\|([^{}]+)\}/g, "$1")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)")
 }
 
 export const QR_ATTACHMENT_NOTE = "GCash and bank transfer QR codes are attached to this email."
@@ -72,7 +73,7 @@ export function requestPaymentParagraphs(b: BookingEmailData): string[] {
     )}** for ${hl(b.workshop)} on ${hl(`${b.date} at ${b.time}`)}, kindly pay the full amount of **${amountOf(
       b
     )}** through either of the online payment portals below, and send us a screenshot of your transaction details as proof of payment.`,
-    `You may reply to this email with your proof of payment, or send it to us via Instagram: ${INSTAGRAM_URL}. Afterwards, you may expect your confirmation email within 24 hours.`,
+    `You may reply to this email with your proof of payment, or send it to us via [Instagram](${INSTAGRAM_URL}). Afterwards, you may expect your confirmation email within 24 hours.`,
     "Thank you so much!",
   ]
 }

@@ -52,7 +52,9 @@ export function emailMeta(kind: EmailKind, data: BookingEmailData) {
 
 // Inline styles — email clients strip <style> blocks and class names.
 const ST = {
-  outer: "font-family:Arial,Helvetica,sans-serif;color:#1b1a17;padding:20px 24px",
+  // Explicit white background — without it, Chrome's copy carries the admin
+  // page's cream background into the pasted email.
+  outer: "background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1b1a17;padding:20px 24px",
   p: "margin:0 0 16px;font-size:16px;line-height:1.7",
   qrRow: "padding:2px 0 14px;text-align:center",
   qrCell: "display:inline-block;padding:0 12px;vertical-align:top",
@@ -82,14 +84,19 @@ const COLORS: Record<string, string> = {
  *   **bold**            → bold
  *   __italic__          → italic
  *   {olive|text}        → colored text (named color or a #hex)
+ *   [text](url)         → hyperlink
  *
  * The raw text is escaped FIRST, so anything a customer typed (a name, notes)
- * can never inject HTML — only these three markers become real tags.
+ * can never inject HTML — only these markers become real tags.
  */
 export function formatInline(raw: string): string {
   let s = esc(raw)
   s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
   s = s.replace(/__(.+?)__/g, "<i>$1</i>")
+  s = s.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    `<a href="$2" style="color:${COLORS.blue}">$1</a>`
+  )
   s = s.replace(/\{([^|{}]+)\|([^{}]+)\}/g, (whole, name: string, text: string) => {
     const key = name.trim().toLowerCase()
     const color = name.trim().startsWith("#") ? name.trim() : COLORS[key]
