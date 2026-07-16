@@ -50,15 +50,14 @@ try {
   check("table shows the phone column", adminHtml.includes("0917 123 4567"))
   check("table shows the booking ID", adminHtml.includes(id))
   check("table has resize affordance", adminHtml.includes("Drag a column edge to resize"))
-  check("no accordion expand-all control", !adminHtml.includes("Expand all"))
+  check("table has expand-all control", adminHtml.includes("Expand all"))
 
-  // 3. Confirmation email preview renders with banner + whimsical copy.
+  // 3. Confirmation email preview renders with the current copy + wordmark.
   const mailHtml = await (await fetch(`${BASE}/admin/email/${id}`, { headers: cookie })).text()
-  check("email: welcome header", mailHtml.includes("Welcome to Tsuchi Studio!"))
-  check("email: greets the client by name", mailHtml.includes("Hello, UICHECK Guest!"))
-  check("email: banner image", mailHtml.includes("/images/header-img.JPG"))
-  check("email: tsuchi wordmark", mailHtml.includes("/assets/tsuchi_word.svg"))
-  check("email: whimsical line", mailHtml.includes("Wear something comfy"))
+  check("email: welcome subject", mailHtml.includes("Welcome to Tsuchi Studio!"))
+  check("email: greets the client by name", mailHtml.includes("Hi <b>UICHECK Guest</b>!"))
+  check("email: tsuchi wordmark", mailHtml.includes("/assets/email/wordmark.png"))
+  check("email: messy-clothes line", mailHtml.includes("comfortable getting dirty"))
   check("email: fee amount", mailHtml.includes("PHP 1,200"))
   check("email: slots + session time", mailHtml.includes("2 slots") && mailHtml.includes("9:00"))
 

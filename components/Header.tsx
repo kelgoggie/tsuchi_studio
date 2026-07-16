@@ -7,7 +7,9 @@ export default function Header({ compact = false }: { compact?: boolean }) {
       className={`relative w-full overflow-hidden bg-cover bg-bottom sm:bg-center md:bg-fixed ${
         compact ? "h-40 sm:h-48 md:h-52" : "h-svh"
       }`}
-      style={{ backgroundImage: "url('/images/header-img.JPG')" }}
+      // header-hero.jpg is the web-sized re-encode of header-img.JPG — a fresh
+      // URL, since the old one lives on in phone caches with a rotation bug.
+      style={{ backgroundImage: "url('/images/header-hero.jpg')" }}
     >
 
       {/* corner label */}
