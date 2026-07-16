@@ -82,7 +82,10 @@ export async function toggleOpening(dateStr: string) {
  * may be ALL_WORKSHOPS, which blocks the session across every active workshop —
  * each one capped at its own capacity, since capacities differ.
  */
-export async function blockSlots(formData: FormData) {
+/** null until submitted; `blocked` is null when a whole session was closed. */
+export type BlockState = { error: string } | { ok: true; blocked: number | null } | null
+
+export async function blockSlots(_prev: BlockState, formData: FormData): Promise<BlockState> {
   if (!(await isAdmin())) throw new Error("Unauthorized")
   const workshopId = String(formData.get("workshopId") ?? "")
   const dateStr = String(formData.get("date") ?? "")
@@ -91,7 +94,11 @@ export async function blockSlots(formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim() || null
 
   const date = parseDateOnly(dateStr)
-  if (!workshopId || !date || !(PERIODS as readonly string[]).includes(period)) return
+  if (!workshopId || !date || !(PERIODS as readonly string[]).includes(period)) {
+    return { error: "Please pick a workshop, session and date." }
+  }
+
+  let blocked: number | null = null
 
   if (workshopId === ALL_WORKSHOPS) {
     const workshops = await prisma.workshop.findMany({
@@ -112,14 +119,16 @@ export async function blockSlots(formData: FormData) {
     // Never block more slots than the session actually has free — the form warns
     // about this, but a stale tab could still post an over-large number.
     const free = await remainingSeats(workshopId, date, period)
-    if (free <= 0) return
+    if (free <= 0) return { error: "This session has no free slots left to block." }
+    blocked = Math.min(slots, free)
     await prisma.slotBlock.create({
-      data: { workshopId, date, period, slots: Math.min(slots, free), reason },
+      data: { workshopId, date, period, slots: blocked, reason },
     })
   }
 
   revalidatePath("/admin/calendar")
   revalidatePath("/admin/schedule")
+  return { ok: true, blocked }
 }
 
 export type CapacityState = { error: string } | { ok: true } | null

@@ -1,8 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { gmailComposeUrl, type BookingEmailData } from "@/lib/email"
 import { emailMeta, emailPlainText, renderEmailHtml, type EmailKind } from "@/lib/email-html"
+
+// Which emails have been composed already, so the buttons can show it. Keyed
+// by booking id + email kind, stored per-browser — a different device or a
+// cleared browser starts blank again.
+const SENT_KEY = "tsuchi-emails-sent-v1"
+
+function readSent(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(SENT_KEY) ?? "{}")
+  } catch {
+    return {}
+  }
+}
+
+function markSent(id: string, kind: EmailKind) {
+  try {
+    const sent = readSent()
+    sent[`${id}:${kind}`] = new Date().toISOString()
+    localStorage.setItem(SENT_KEY, JSON.stringify(sent))
+  } catch {
+    /* storage unavailable — the highlight just won't persist */
+  }
+}
 
 /**
  * One click: copies the formatted email (bold/blue/red highlights, QR codes,
@@ -102,8 +125,16 @@ export default function EmailComposeButton({
   className: string
 }) {
   const [copied, setCopied] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  // Read after mount — localStorage doesn't exist during server render.
+  useEffect(() => {
+    setSent(Boolean(readSent()[`${data.id}:${kind}`]))
+  }, [data.id, kind])
 
   async function onClick() {
+    markSent(data.id, kind)
+    setSent(true)
     const { subject } = emailMeta(kind, data)
     let html = renderEmailHtml(kind, data, window.location.origin)
     const text = emailPlainText(kind, data)
@@ -131,8 +162,14 @@ export default function EmailComposeButton({
     <button
       type="button"
       onClick={onClick}
-      title="Copies the formatted email, then opens Gmail — paste with Ctrl+V"
-      className={className}
+      title={
+        sent
+          ? "Already composed for this booking — click to copy & open Gmail again"
+          : "Copies the formatted email, then opens Gmail — paste with Ctrl+V"
+      }
+      // !important variants so the sage tint beats the border/text utilities
+      // that arrive through className.
+      className={`${className} ${sent ? "!border-sage/60 !bg-sage/15 !text-sage" : ""}`}
     >
       {icon}
       {copied ? "Copied — paste!" : label}

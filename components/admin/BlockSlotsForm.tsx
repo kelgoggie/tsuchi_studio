@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { blockSlots } from "@/app/admin/actions"
+import { useActionState, useEffect, useState } from "react"
+import { blockSlots, type BlockState } from "@/app/admin/actions"
 import { ALL_WORKSHOPS } from "@/lib/constants"
 import { useAvailability } from "./useAvailability"
 
@@ -15,10 +15,21 @@ export default function BlockSlotsForm({
 }: {
   workshops: { id: string; name: string; capacity: number }[]
 }) {
+  const [state, action, pending] = useActionState<BlockState, FormData>(blockSlots, null)
   const [workshopId, setWorkshopId] = useState("")
   const [period, setPeriod] = useState("")
   const [date, setDate] = useState("")
   const [slots, setSlots] = useState(1)
+  const [confirmed, setConfirmed] = useState(false)
+
+  // Flash the success note for a few seconds after a block lands.
+  useEffect(() => {
+    if (state && "ok" in state) {
+      setConfirmed(true)
+      const t = setTimeout(() => setConfirmed(false), 3500)
+      return () => clearTimeout(t)
+    }
+  }, [state])
 
   const all = workshopId === ALL_WORKSHOPS
   const chosen = workshops.find((w) => w.id === workshopId)
@@ -42,7 +53,7 @@ export default function BlockSlotsForm({
   }
 
   return (
-    <form action={blockSlots} className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+    <form action={action} className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
       <label className="block">
         <span className={LABEL}>Workshop</span>
         <select
@@ -124,15 +135,23 @@ export default function BlockSlotsForm({
               ? "This session has no free slots left to block."
               : `You can only block up to ${maxSlots} slot${maxSlots === 1 ? "" : "s"} in this session.`}
           </p>
+        ) : state && "error" in state && !confirmed ? (
+          <p className="mr-auto text-xs text-red-600">{state.error}</p>
+        ) : confirmed && state && "ok" in state ? (
+          <p className="mr-auto text-xs text-olive">
+            {state.blocked === null
+              ? "Session blocked across all workshops."
+              : `${state.blocked} slot${state.blocked === 1 ? "" : "s"} blocked successfully.`}
+          </p>
         ) : (
           <p className="mr-auto text-xs text-muted">{hint()}</p>
         )}
 
         <button
-          disabled={tooMany}
+          disabled={tooMany || pending}
           className="rounded-full bg-olive px-7 py-2.5 text-sm text-cream transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Block slots
+          {pending ? "Blocking…" : "Block slots"}
         </button>
       </div>
     </form>
