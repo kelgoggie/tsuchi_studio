@@ -3,29 +3,7 @@
 import { useEffect, useState } from "react"
 import { gmailComposeUrl, type BookingEmailData } from "@/lib/email"
 import { emailMeta, emailPlainText, renderEmailHtml, type EmailKind } from "@/lib/email-html"
-
-// Which emails have been composed already, so the buttons can show it. Keyed
-// by booking id + email kind, stored per-browser — a different device or a
-// cleared browser starts blank again.
-const SENT_KEY = "tsuchi-emails-sent-v1"
-
-function readSent(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(SENT_KEY) ?? "{}")
-  } catch {
-    return {}
-  }
-}
-
-function markSent(id: string, kind: EmailKind) {
-  try {
-    const sent = readSent()
-    sent[`${id}:${kind}`] = new Date().toISOString()
-    localStorage.setItem(SENT_KEY, JSON.stringify(sent))
-  } catch {
-    /* storage unavailable — the highlight just won't persist */
-  }
-}
+import { toggleEmailMark } from "@/app/admin/actions"
 
 /**
  * One click: copies the formatted email (bold/blue/red highlights, QR codes,
@@ -117,24 +95,33 @@ export default function EmailComposeButton({
   icon,
   label,
   className,
+  sent: sentInitial = false,
 }: {
   kind: EmailKind
   data: BookingEmailData
   icon?: React.ReactNode
   label: string
   className: string
+  /** Server truth: an EmailMark row exists for this booking + kind. */
+  sent?: boolean
 }) {
   const [copied, setCopied] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [sent, setSent] = useState(sentInitial)
 
-  // Read after mount — localStorage doesn't exist during server render.
-  useEffect(() => {
-    setSent(Boolean(readSent()[`${data.id}:${kind}`]))
-  }, [data.id, kind])
+  // Follow the server when the page revalidates (e.g. marked from another tab).
+  useEffect(() => setSent(sentInitial), [sentInitial])
 
   async function onClick() {
-    markSent(data.id, kind)
+    // Second click on a marked button only clears the highlight (misclick
+    // insurance) — it doesn't open Gmail again.
+    if (sent) {
+      setSent(false)
+      void toggleEmailMark(data.id, kind, false)
+      return
+    }
     setSent(true)
+    void toggleEmailMark(data.id, kind, true)
+
     const { subject } = emailMeta(kind, data)
     let html = renderEmailHtml(kind, data, window.location.origin)
     const text = emailPlainText(kind, data)
@@ -164,7 +151,7 @@ export default function EmailComposeButton({
       onClick={onClick}
       title={
         sent
-          ? "Already composed for this booking — click to copy & open Gmail again"
+          ? "Already composed for this booking — click again to clear the highlight"
           : "Copies the formatted email, then opens Gmail — paste with Ctrl+V"
       }
       // !important variants so the sage tint beats the border/text utilities

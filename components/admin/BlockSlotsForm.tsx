@@ -19,7 +19,9 @@ export default function BlockSlotsForm({
   const [workshopId, setWorkshopId] = useState("")
   const [period, setPeriod] = useState("")
   const [date, setDate] = useState("")
-  const [slots, setSlots] = useState(1)
+  // Raw text so the field can be emptied mid-typing; the number falls back to 1.
+  const [slotsRaw, setSlotsRaw] = useState("1")
+  const slots = Math.max(1, Math.floor(Number(slotsRaw)) || 1)
   const [confirmed, setConfirmed] = useState(false)
 
   // Flash the success note for a few seconds after a block lands.
@@ -43,6 +45,7 @@ export default function BlockSlotsForm({
     !chosen ? null : date && period ? Math.max(0, remainingFor(date, period)) : chosen.capacity
 
   const tooMany = maxSlots !== null && !all && slots > maxSlots
+  const belowMin = !all && slotsRaw.trim() !== "" && Math.floor(Number(slotsRaw)) < 1
 
   const hint = () => {
     if (all) return "Every slot in this session will be blocked across all workshops."
@@ -113,12 +116,13 @@ export default function BlockSlotsForm({
             type="number"
             min={1}
             max={maxSlots ?? undefined}
-            value={all ? "" : slots}
-            onChange={(e) => setSlots(Math.max(1, Number(e.target.value) || 1))}
+            value={all ? "" : slotsRaw}
+            onChange={(e) => setSlotsRaw(e.target.value)}
+            onBlur={() => setSlotsRaw(String(slots))}
             disabled={all}
             placeholder={all ? "All" : undefined}
-            aria-invalid={tooMany}
-            className={`${FIELD} ${tooMany ? "border-red-500 text-red-600" : ""}`}
+            aria-invalid={tooMany || belowMin}
+            className={`${FIELD} ${tooMany || belowMin ? "border-red-500 text-red-600" : ""}`}
           />
         </label>
       </div>
@@ -129,7 +133,9 @@ export default function BlockSlotsForm({
       </label>
 
       <div className="flex flex-wrap items-center justify-end gap-3 sm:col-span-2">
-        {tooMany ? (
+        {belowMin ? (
+          <p className="mr-auto text-xs text-red-600">Minimum 1 slot required.</p>
+        ) : tooMany ? (
           <p className="mr-auto text-xs text-red-600">
             {maxSlots === 0
               ? "This session has no free slots left to block."

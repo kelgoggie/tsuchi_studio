@@ -62,8 +62,21 @@ model Booking {
   bookingFee Int? // the full class fee, paid upfront
   status     BookingStatus @default(PENDING)
   createdAt  DateTime      @default(now())
+  emailMarks EmailMark[]
 
   @@index([date, period, workshopId])
+}
+
+// One row per email button the admin has composed for a booking — drives the
+// pressed/sage tint on the email buttons, shared across devices and sessions.
+model EmailMark {
+  id        String   @id @default(cuid())
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String
+  kind      String // request | confirmation | expired | filled
+  createdAt DateTime @default(now())
+
+  @@unique([bookingId, kind])
 }
 
 // Slots the studio holds back for a specific workshop/date/session, without a

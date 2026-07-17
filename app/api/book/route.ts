@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     invoiceVia: "EMAIL",
     bookingFee: feeAmount,
     bookingStatus: "UNPAID",
+    notes: notes ?? "",
   })
 
   return NextResponse.json({ ok: true, id: result.id })

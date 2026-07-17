@@ -18,21 +18,26 @@
 //
 // The studio now takes FULL payment upfront, so the old "Remaining Fee" column
 // is gone — delete it from the sheet so these positions line up again.
+//
+// NEW: the site now sends the booking notes (add-on marker + anything the
+// guest typed). Add a "Notes" header in column O, then redeploy this script
+// as a **New version** (see the header comment above).
 var COLS = {
-  bookedOn: 1,      // Booked On
-  name: 2,          // Name
-  id: 3,            // Booking ID
-  workshop: 4,      // Workshop
-  date: 5,          // Workshop Date
-  day: 6,           // Day
-  session: 7,       // Session
-  slots: 8,         // Slots
-  phone: 9,         // Contact No.
-  email: 10,        // Email Address
-  instagram: 11,    // Instagram
-  invoiceVia: 12,   // Invoice Via  (EMAIL or INSTAGRAM — how they want the invoice)
-  bookingFee: 13,   // Amount Paid  (the full class fee)
-  bookingStatus: 14 // Booking Status
+  bookedOn: 1,       // Booked On
+  name: 2,           // Name
+  id: 3,             // Booking ID
+  workshop: 4,       // Workshop
+  date: 5,           // Workshop Date
+  day: 6,            // Day
+  session: 7,        // Session
+  slots: 8,          // Slots
+  phone: 9,          // Contact No.
+  email: 10,         // Email Address
+  instagram: 11,     // Instagram
+  invoiceVia: 12,    // Invoice Via  (EMAIL or INSTAGRAM — how they want the invoice)
+  bookingFee: 13,    // Amount Paid  (the full class fee)
+  bookingStatus: 14, // Booking Status
+  notes: 15          // Notes  (add-on marker + guest notes)
 };
 
 var ID_COL = COLS.id;
@@ -42,7 +47,21 @@ function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   var d = JSON.parse(e.postData.contents);
 
+  if (d.action === "reset") return resetRows(sheet, d);
   return d.action === "update" ? updateRow(sheet, d) : appendRow(sheet, d);
+}
+
+/**
+ * Wipe every data row (the header row stays) so the sheet can be rebuilt from
+ * the database — used by scripts/rebuild-sheet.mjs. The confirm phrase keeps a
+ * stray or malformed payload from emptying the sheet by accident.
+ */
+function resetRows(sheet, d) {
+  if (d.confirm !== "yes-wipe-rows") return json({ ok: false, error: "missing confirm phrase" });
+  var last = sheet.getLastRow();
+  var cleared = Math.max(0, last - 1);
+  if (cleared > 0) sheet.deleteRows(2, cleared);
+  return json({ ok: true, cleared: cleared });
 }
 
 /** Row number of the booking with this ID, or 0 if it isn't in the sheet. */
@@ -88,7 +107,8 @@ function appendRow(sheet, d) {
     d.instagram,
     d.invoiceVia || "EMAIL",
     d.bookingFee,
-    d.bookingStatus || "UNPAID"
+    d.bookingStatus || "UNPAID",
+    d.notes || ""
   ]);
 
   paintStatus(sheet, sheet.getLastRow());

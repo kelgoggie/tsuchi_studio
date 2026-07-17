@@ -15,6 +15,7 @@ import {
   SEAT_HOLDING,
 } from "@/lib/booking"
 import { ALL_WORKSHOPS } from "@/lib/constants"
+import { WORKSHOPS } from "@/lib/workshops"
 import { fmtDay } from "@/lib/format"
 import { BookingStatus, type Period } from "@/app/generated/prisma/client"
 
@@ -31,6 +32,19 @@ export async function setBookingStatus(formData: FormData) {
   const next = String(formData.get("status") ?? "")
   if (!id || !(next in BookingStatus)) return
 
+  // Never confirm a party into a session that can't seat it — the table grays
+  // the button out, but a stale tab could still post.
+  if (next === "CONFIRMED") {
+    const b = await prisma.booking.findUnique({
+      where: { id },
+      select: { workshopId: true, date: true, period: true, partySize: true, status: true },
+    })
+    if (!b) return
+    if (b.status !== "CONFIRMED" && b.partySize > (await remainingSeats(b.workshopId, b.date, b.period))) {
+      return
+    }
+  }
+
   await prisma.booking.update({
     where: { id },
     data: { status: BookingStatus[next as keyof typeof BookingStatus] },
@@ -38,6 +52,24 @@ export async function setBookingStatus(formData: FormData) {
 
   // Mirror the change into the Google Sheet (find the row by Booking ID).
   await forwardToSheet({ action: "update", id, bookingStatus: SHEET_STATUS[next] })
+
+  revalidatePath("/admin")
+}
+
+/** Toggle the "this email was composed" mark that tints the email buttons. */
+export async function toggleEmailMark(bookingId: string, kind: string, on: boolean) {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+  if (!bookingId || !kind) return
+
+  if (on) {
+    await prisma.emailMark.upsert({
+      where: { bookingId_kind: { bookingId, kind } },
+      create: { bookingId, kind },
+      update: {},
+    })
+  } else {
+    await prisma.emailMark.deleteMany({ where: { bookingId, kind } })
+  }
 
   revalidatePath("/admin")
 }
@@ -288,6 +320,7 @@ export async function updateBooking(
     invoiceVia: email ? "EMAIL" : "INSTAGRAM",
     bookingFee: feeRaw ? Number(feeRaw) : "",
     bookingStatus: SHEET_STATUS[statusRaw] ?? "UNPAID",
+    notes: notes ?? "",
   })
 
   revalidatePath("/admin")
@@ -312,9 +345,15 @@ export async function createAdminBooking(
   const email = String(formData.get("email") ?? "").trim()
   const phone = String(formData.get("phone") ?? "").trim() || undefined
   const instagram = String(formData.get("instagram") ?? "").trim() || undefined
-  const notes = String(formData.get("notes") ?? "").trim() || undefined
   const feeRaw = String(formData.get("bookingFee") ?? "").trim()
   const statusRaw = String(formData.get("status") ?? "PENDING")
+
+  // The add-on marker lands in the notes, same shape the customer form uses.
+  const addon = formData.get("addon") === "1" ? WORKSHOPS.find((w) => w.workshopId === workshopId)?.addon : undefined
+  const notes =
+    [addon ? `+ add-on (₱${addon.price.toLocaleString()})` : "", String(formData.get("notes") ?? "").trim()]
+      .filter(Boolean)
+      .join(" ") || undefined
 
   const date = parseDateOnly(dateStr)
   if (!workshopId) return { error: "Choose a workshop." }
@@ -362,6 +401,7 @@ export async function createAdminBooking(
     invoiceVia: email ? "EMAIL" : "INSTAGRAM",
     bookingFee: feeRaw ? Number(feeRaw) : "",
     bookingStatus: SHEET_STATUS[statusRaw] ?? "UNPAID",
+    notes: notes ?? "",
   })
 
   revalidatePath("/admin")

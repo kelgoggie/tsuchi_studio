@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { PERIODS, PERIOD_LABELS, PERIOD_TIMES, parseDateOnly } from "@/lib/booking"
+import { PERIODS, PERIOD_LABELS, PERIOD_TIMES, SEAT_HOLDING, parseDateOnly } from "@/lib/booking"
 import { fmtDate, fmtDateTimeCompact, fmtDay, peso } from "@/lib/format"
 import BookingFilters from "@/components/admin/BookingFilters"
 import BookingSearch from "@/components/admin/BookingSearch"
@@ -74,7 +74,7 @@ export default async function AdminBookingsPage({
   const [bookings, total, workshops] = await Promise.all([
     prisma.booking.findMany({
       where,
-      include: { workshop: true },
+      include: { workshop: true, emailMarks: { select: { kind: true } } },
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -86,13 +86,43 @@ export default async function AdminBookingsPage({
     }),
   ])
 
+  // Free seats per session shown on this page, so Confirm can gray out when a
+  // pending party no longer fits (capacity − confirmed seats − held blocks).
+  const sessionKey = (b: { workshopId: string; date: Date; period: string }) =>
+    `${b.workshopId}|${b.date.toISOString().slice(0, 10)}|${b.period}`
+  const sessions = [
+    ...new Map(
+      bookings.map((b) => [sessionKey(b), { workshopId: b.workshopId, date: b.date, period: b.period }])
+    ).values(),
+  ]
+  const [held, blocked] = sessions.length
+    ? await Promise.all([
+        prisma.booking.groupBy({
+          by: ["workshopId", "date", "period"],
+          where: { status: { in: SEAT_HOLDING }, OR: sessions },
+          _sum: { partySize: true },
+        }),
+        prisma.slotBlock.groupBy({
+          by: ["workshopId", "date", "period"],
+          where: { OR: sessions },
+          _sum: { slots: true },
+        }),
+      ])
+    : [[], []]
+  const heldBy = new Map(held.map((h) => [sessionKey(h), h._sum.partySize ?? 0]))
+  const blockedBy = new Map(blocked.map((h) => [sessionKey(h), h._sum.slots ?? 0]))
+
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const filtered =
     statuses.length > 0 || workshopIds.length > 0 || periods.length > 0 || Boolean(from || to) || Boolean(q)
 
   // Format on the server (PH time) so the client can't hydrate a different string.
   const rows: BookingRowData[] = bookings.map((b) => {
+    const free = b.workshop.capacity - (heldBy.get(sessionKey(b)) ?? 0) - (blockedBy.get(sessionKey(b)) ?? 0)
     return {
+      // Confirmed bookings already hold their seats; anyone else must still fit.
+      slotsShort: b.status !== "CONFIRMED" && b.partySize > free,
+      sentEmails: b.emailMarks.map((m) => m.kind),
       booking: {
         id: b.id,
         workshopId: b.workshopId,

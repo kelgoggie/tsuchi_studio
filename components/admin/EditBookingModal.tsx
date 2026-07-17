@@ -46,7 +46,10 @@ export default function EditBookingModal({
   const [workshopId, setWorkshopId] = useState(booking.workshopId)
   const [dateStr, setDateStr] = useState(booking.date)
   const [period, setPeriod] = useState(booking.period)
-  const [partySize, setPartySize] = useState(booking.partySize)
+  // Raw text so the field can be emptied mid-typing; the number falls back to 1.
+  const [partyRaw, setPartyRaw] = useState(String(booking.partySize))
+  const partySize = Math.max(1, Math.floor(Number(partyRaw)) || 1)
+  const belowMin = partyRaw.trim() !== "" && Math.floor(Number(partyRaw)) < 1
 
   // Availability for the *currently selected* workshop, ignoring this booking's
   // own seats so it isn't blocked by itself.
@@ -161,15 +164,20 @@ export default function EditBookingModal({
               <input
                 type="number"
                 min={1}
-                value={partySize}
-                onChange={(e) => setPartySize(Math.max(1, Number(e.target.value) || 1))}
-                aria-invalid={overCapacity}
-                className={`${FIELD} ${overCapacity ? "border-red-500 text-red-600" : ""}`}
+                value={partyRaw}
+                onChange={(e) => setPartyRaw(e.target.value)}
+                onBlur={() => setPartyRaw(String(partySize))}
+                aria-invalid={overCapacity || belowMin}
+                className={`${FIELD} ${overCapacity || belowMin ? "border-red-500 text-red-600" : ""}`}
               />
-              {overCapacity && (
-                <p className="mt-1 text-xs text-red-600">
-                  {slotsLeft <= 0 ? "That session is full." : `Only ${slotsLeft} left in that session.`}
-                </p>
+              {belowMin ? (
+                <p className="mt-1 text-xs text-red-600">Minimum 1 slot required.</p>
+              ) : (
+                overCapacity && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {slotsLeft <= 0 ? "That session is full." : `Only ${slotsLeft} left in that session.`}
+                  </p>
+                )
               )}
             </label>
 

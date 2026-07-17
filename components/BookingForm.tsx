@@ -71,7 +71,10 @@ export default function BookingForm({
   const router = useRouter()
   const [dateStr, setDateStr] = useState<string | null>(null)
   const [period, setPeriod] = useState<string | null>(null)
-  const [partySize, setPartySize] = useState(1)
+  // Raw text so the field can be emptied mid-typing; the number falls back to 1.
+  const [partyRaw, setPartyRaw] = useState("1")
+  const partySize = Math.max(1, Math.floor(Number(partyRaw)) || 1)
+  const belowMin = partyRaw.trim() !== "" && Math.floor(Number(partyRaw)) < 1
   const [addonChecked, setAddonChecked] = useState(false)
   const [email, setEmail] = useState("")
   const [instagram, setInstagram] = useState("")
@@ -284,24 +287,29 @@ export default function BookingForm({
             type="number"
             min={1}
             max={unlimited ? maxParty : slotsLeft}
-            value={partySize}
+            value={partyRaw}
             // Don't silently clamp — let them overshoot so we can say why it's too many.
-            onChange={(e) => setPartySize(Math.max(1, Number(e.target.value) || 1))}
-            aria-invalid={overCapacity}
+            onChange={(e) => setPartyRaw(e.target.value)}
+            onBlur={() => setPartyRaw(String(partySize))}
+            aria-invalid={overCapacity || belowMin}
             className={`w-20 rounded-lg border bg-paper px-3 py-2 text-sm outline-none transition ${
-              overCapacity ? "border-red-500 text-red-600 focus:border-red-500" : "border-divider focus:border-olive"
+              overCapacity || belowMin ? "border-red-500 text-red-600 focus:border-red-500" : "border-divider focus:border-olive"
             }`}
           />
         </label>
 
-        {overCapacity && (
-          <p className="mt-1.5 text-right text-xs text-red-600">
-            {!period
-              ? `Only ${cap} people fit in a session.`
-              : slotsLeft <= 0
-                ? "That session is full — please pick another."
-                : `Only ${slotsLeft} slot${slotsLeft === 1 ? "" : "s"} left for this session.`}
-          </p>
+        {belowMin ? (
+          <p className="mt-1.5 text-right text-xs text-red-600">Minimum 1 slot required.</p>
+        ) : (
+          overCapacity && (
+            <p className="mt-1.5 text-right text-xs text-red-600">
+              {!period
+                ? `Only ${cap} people fit in a session.`
+                : slotsLeft <= 0
+                  ? "That session is full — please pick another."
+                  : `Only ${slotsLeft} slot${slotsLeft === 1 ? "" : "s"} left for this session.`}
+            </p>
+          )
         )}
       </div>
 

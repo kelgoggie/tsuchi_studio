@@ -4,6 +4,7 @@ import { useActionState, useState } from "react"
 import BookingCalendar from "@/components/BookingCalendar"
 import { useAvailability } from "./useAvailability"
 import { createAdminBooking, type NewBookingState } from "@/app/admin/actions"
+import { WORKSHOPS } from "@/lib/workshops"
 
 const FIELD =
   "w-full rounded-lg border border-divider bg-paper px-3 py-2.5 text-sm outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/15"
@@ -27,9 +28,16 @@ export default function NewBookingForm({
   const [workshopId, setWorkshopId] = useState("")
   const [dateStr, setDateStr] = useState<string | null>(null)
   const [period, setPeriod] = useState<string | null>(null)
-  const [partySize, setPartySize] = useState(1)
+  // Raw text so the field can be emptied mid-typing; the number falls back to 1.
+  const [partyRaw, setPartyRaw] = useState("1")
+  const partySize = Math.max(1, Math.floor(Number(partyRaw)) || 1)
+  const belowMin = partyRaw.trim() !== "" && Math.floor(Number(partyRaw)) < 1
 
   const { avail, remainingFor } = useAvailability(workshopId)
+
+  // Same add-on the customer form offers (second session + glazing on the
+  // ceramic workshops) — the action appends it to the notes when checked.
+  const addon = WORKSHOPS.find((w) => w.workshopId === workshopId)?.addon
 
   const slotsLeft = period ? remainingFor(dateStr, period) : avail.capacity
   const overCapacity = Boolean(workshopId) && partySize > slotsLeft
@@ -130,15 +138,20 @@ export default function NewBookingForm({
             <input
               type="number"
               min={1}
-              value={partySize}
-              onChange={(e) => setPartySize(Math.max(1, Number(e.target.value) || 1))}
-              aria-invalid={overCapacity}
-              className={`${FIELD} ${overCapacity ? "border-red-500 text-red-600" : ""}`}
+              value={partyRaw}
+              onChange={(e) => setPartyRaw(e.target.value)}
+              onBlur={() => setPartyRaw(String(partySize))}
+              aria-invalid={overCapacity || belowMin}
+              className={`${FIELD} ${overCapacity || belowMin ? "border-red-500 text-red-600" : ""}`}
             />
-            {overCapacity && (
-              <p className="mt-1 text-xs text-red-600">
-                {slotsLeft <= 0 ? "That session is full." : `Only ${slotsLeft} left in that session.`}
-              </p>
+            {belowMin ? (
+              <p className="mt-1 text-xs text-red-600">Minimum 1 slot required.</p>
+            ) : (
+              overCapacity && (
+                <p className="mt-1 text-xs text-red-600">
+                  {slotsLeft <= 0 ? "That session is full." : `Only ${slotsLeft} left in that session.`}
+                </p>
+              )
             )}
           </label>
 
@@ -175,6 +188,16 @@ export default function NewBookingForm({
             <span className={LABEL}>Amount paid (₱)</span>
             <input name="bookingFee" type="number" min={0} placeholder="e.g. 600" className={FIELD} />
           </label>
+
+          {addon && (
+            <label className="flex items-start gap-2 rounded-lg border border-divider bg-paper p-3 text-sm sm:col-span-2">
+              <input type="checkbox" name="addon" value="1" className="mt-0.5 accent-olive" />
+              <span>
+                Add <span className="font-medium">{addon.label}</span> (+₱
+                {addon.price.toLocaleString()}/person)
+              </span>
+            </label>
+          )}
 
           <label className="block sm:col-span-2">
             <span className={LABEL}>Notes</span>

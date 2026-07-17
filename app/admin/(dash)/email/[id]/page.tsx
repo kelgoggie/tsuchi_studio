@@ -32,7 +32,7 @@ export default async function AdminEmailPage({
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { workshop: { select: { name: true } } },
+    include: { workshop: { select: { name: true } }, emailMarks: { select: { kind: true } } },
   })
   if (!booking) notFound()
 
@@ -107,6 +107,7 @@ export default async function AdminEmailPage({
         <EmailComposeButton
           kind={emailType}
           data={data}
+          sent={booking.emailMarks.some((m) => m.kind === emailType)}
           label="Copy & open Gmail"
           className="rounded-full bg-olive px-5 py-2 text-sm text-cream transition hover:opacity-90"
         />

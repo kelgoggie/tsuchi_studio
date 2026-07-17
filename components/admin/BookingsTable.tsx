@@ -58,6 +58,10 @@ export type BookingRowData = {
   dayLabel: string
   sessionLabel: string
   feeLabel: string
+  /** The session can't seat this party any more — Confirm is disabled. */
+  slotsShort: boolean
+  /** Email kinds already composed for this booking (from EmailMark rows). */
+  sentEmails: string[]
   /** Everything the email builders need, so the buttons work client-side. */
   email: BookingEmailData
 }
@@ -87,12 +91,24 @@ const COLUMNS: Column[] = [
 const MIN_WIDTH = 60
 const STORAGE_KEY = "tsuchi-admin-col-widths-v2"
 
-function StatusButton({ id, status, label }: { id: string; status: string; label: string }) {
+function StatusButton({
+  id,
+  status,
+  label,
+  disabled,
+}: {
+  id: string
+  status: string
+  label: string
+  disabled?: boolean
+}) {
   return (
     <form action={setBookingStatus}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
-      <button className={PILL}>{label}</button>
+      <button disabled={disabled} className={`${PILL} disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent`}>
+        {label}
+      </button>
     </form>
   )
 }
@@ -146,20 +162,27 @@ function BookingRow({
         return <span className="text-muted">{row.sessionLabel}</span>
       case "actions":
         return (
-          <div className="flex items-center gap-1">
-            <EditBookingButton booking={b} workshops={workshops} />
-            {b.status !== "CONFIRMED" && <StatusButton id={b.id} status="CONFIRMED" label="Confirm" />}
-            {b.status !== "CANCELLED" && <StatusButton id={b.id} status="CANCELLED" label="Cancel" />}
-            {b.status !== "PENDING" && <StatusButton id={b.id} status="PENDING" label="Pending" />}
+          <div>
+            <div className="flex items-center gap-1">
+              <EditBookingButton booking={b} workshops={workshops} />
+              {b.status !== "CONFIRMED" && (
+                <StatusButton id={b.id} status="CONFIRMED" label="Confirm" disabled={row.slotsShort} />
+              )}
+              {b.status !== "CANCELLED" && <StatusButton id={b.id} status="CANCELLED" label="Cancel" />}
+              {b.status !== "PENDING" && <StatusButton id={b.id} status="PENDING" label="Pending" />}
+            </div>
+            {row.slotsShort && b.status !== "CONFIRMED" && (
+              <p className="mt-0.5 text-[10px] leading-tight text-red-600">insufficient slots</p>
+            )}
           </div>
         )
       case "emails":
         return (
           <div className="flex flex-nowrap items-center gap-1">
-            <EmailComposeButton kind="request" data={row.email} icon={MAIL_ICONS.payment} label="Payment" className={ICON} />
-            <EmailComposeButton kind="confirmation" data={row.email} icon={MAIL_ICONS.confirmation} label="Confirmation" className={ICON} />
-            <EmailComposeButton kind="expired" data={row.email} icon={MAIL_ICONS.expired} label="Expired" className={ICON} />
-            <EmailComposeButton kind="filled" data={row.email} icon={MAIL_ICONS.filled} label="Filled" className={ICON} />
+            <EmailComposeButton kind="request" data={row.email} icon={MAIL_ICONS.payment} label="Payment" className={ICON} sent={row.sentEmails.includes("request")} />
+            <EmailComposeButton kind="confirmation" data={row.email} icon={MAIL_ICONS.confirmation} label="Confirmation" className={ICON} sent={row.sentEmails.includes("confirmation")} />
+            <EmailComposeButton kind="expired" data={row.email} icon={MAIL_ICONS.expired} label="Expired" className={ICON} sent={row.sentEmails.includes("expired")} />
+            <EmailComposeButton kind="filled" data={row.email} icon={MAIL_ICONS.filled} label="Filled" className={ICON} sent={row.sentEmails.includes("filled")} />
           </div>
         )
       default:
