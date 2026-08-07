@@ -16,12 +16,9 @@
 
 // Column positions, 1-indexed, matching the sheet headers.
 //
-// The studio now takes FULL payment upfront, so the old "Remaining Fee" column
-// is gone — delete it from the sheet so these positions line up again.
-//
-// NEW: the site now sends the booking notes (add-on marker + anything the
-// guest typed). Add a "Notes" header in column O, then redeploy this script
-// as a **New version** (see the header comment above).
+// The studio takes FULL payment upfront: "Booking Fee" (L) holds the full
+// class fee. "Remaining Fee" (M) is a MANUAL column — the site never writes
+// it, so whatever the studio types there survives updates and rebuilds.
 var COLS = {
   bookedOn: 1,       // Booked On
   name: 2,           // Name
@@ -34,8 +31,8 @@ var COLS = {
   phone: 9,          // Contact No.
   email: 10,         // Email Address
   instagram: 11,     // Instagram
-  invoiceVia: 12,    // Invoice Via  (EMAIL or INSTAGRAM — how they want the invoice)
-  bookingFee: 13,    // Amount Paid  (the full class fee)
+  bookingFee: 12,    // Booking Fee  (the full class fee)
+  // 13 = Remaining Fee — manual entries only, never written by the site
   bookingStatus: 14, // Booking Status
   notes: 15          // Notes  (add-on marker + guest notes)
 };
@@ -105,8 +102,8 @@ function appendRow(sheet, d) {
     d.phone,
     d.email,
     d.instagram,
-    d.invoiceVia || "EMAIL",
     d.bookingFee,
+    "", // Remaining Fee — left blank for the studio's manual entry
     d.bookingStatus || "UNPAID",
     d.notes || ""
   ]);

@@ -23,7 +23,7 @@ export default function BookingSubmittedPage() {
               <p>Thank you for booking a workshop with us.</p>
               <p>
                 Your reservation request has been received and is currently under review. Once your request has been
-                approved, we will send you the payment instructions and QR code for the full class fee via your email address. 
+                approved, we will send you the payment instructions and QR code for the full class fee to  your email address from Tsuchi Studio (studiotsuchi76@gmail.com). To ensure you don't miss our email, please check your inbox (and your spam or promotions folder, if necessary). 
                 Once you receive your QR codes, kindly settle your fees within 24 hours. Please note that we operate on a first-to-pay basis, so be sure to secure your slots as soon as possible!
               </p>
               <p>{PAYMENT_NOTICE}</p>

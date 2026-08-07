@@ -13,7 +13,12 @@ export type WorkshopOffering = {
   workshopId: string
   label: string
   titleScript: string
+  /** Shown on the /workshops grid card. */
   image: string
+  /** Shown on the /book (session details) page — can differ from the card photo. */
+  detailImage: string
+  /** detailImage is a tall portrait shot — size its box to the photo instead of cropping it. */
+  portraitDetail?: boolean
   price: number
   description: string
   inclusions: string[]
@@ -51,9 +56,11 @@ export const WORKSHOPS: WorkshopOffering[] = [
   {
     slug: "handbuilding",
     workshopId: "handbuilding",
-    label: "Hand-building Workshop",
-    titleScript: "hand-building workshop",
-    image: "/images/handbuilding.JPG",
+    label: "Hand-building",
+    titleScript: "hand-building",
+    image: "/images/handbuilding-home.png",
+    detailImage: "/images/handbuilding-expanded.png",
+    portraitDetail: true,
     price: 1200,
     description: "Create your own ceramic piece while learning the basics of pinching, coiling, and slab building.",
     inclusions: CERAMIC_INCLUSIONS,
@@ -64,7 +71,9 @@ export const WORKSHOPS: WorkshopOffering[] = [
     workshopId: "wheel-throwing",
     label: "Introduction to Wheel-throwing",
     titleScript: "introduction to wheel-throwing",
-    image: "/images/wheel-throwing.JPG",
+    image: "/images/wheelthrowing-card.png",
+    detailImage: "/images/wheelthrowing-expanded.png",
+    portraitDetail: true,
     price: 1800,
     description: "Learn the fundamentals of wheel throwing and create your own pottery on the wheel.",
     inclusions: CERAMIC_INCLUSIONS,
@@ -75,7 +84,9 @@ export const WORKSHOPS: WorkshopOffering[] = [
     workshopId: "ceramic-painting",
     label: "Ceramic Painting",
     titleScript: "ceramic painting",
-    image: "/images/ceramic-painting-workshop.JPG",
+    image: "/images/ceramicpainting-card.png",
+    detailImage: "/images/ceramicpainting-expanded.png",
+    portraitDetail: true,
     price: 500,
     priceNote: "Pieces start at ₱500",
     description: "Paint and personalize a ready-to-paint ceramic piece.",
@@ -96,6 +107,7 @@ export const WORKSHOPS: WorkshopOffering[] = [
     label: "Medium Rug Tufting",
     titleScript: "medium rug tufting",
     image: "/images/rug-tugting-01.JPG",
+    detailImage: "/images/rug-tugting-01.JPG",
     price: 1800,
     description: "Create your own custom rug from your chosen design.",
     inclusions: ["2.5-hour session", "45 × 45 cm frame", ...TUFTING_INCLUSIONS_BASE],
@@ -107,6 +119,7 @@ export const WORKSHOPS: WorkshopOffering[] = [
     label: "Large Rug Tufting",
     titleScript: "large rug tufting",
     image: "/images/rug-tugting-02.JPG",
+    detailImage: "/images/rug-tugting-02.JPG",
     price: 2500,
     description: "Perfect for larger and more detailed designs.",
     inclusions: ["3-hour session", "60 × 60 cm frame", ...TUFTING_INCLUSIONS_BASE],

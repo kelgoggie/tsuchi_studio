@@ -49,8 +49,20 @@ export default async function BookPage({
               <div className="mt-6 grid gap-8 md:grid-cols-2">
                 {/* details */}
                 <div>
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-                    <Image src={workshop.image} alt={workshop.label} fill sizes="(min-width:768px) 50vw, 100vw" className="object-cover" />
+                  {/* portrait shots get a tall box matching the photo's real 9:16 ratio, full
+                      column width, so nothing gets cropped. */}
+                  <div
+                    className={`relative overflow-hidden rounded-2xl ${
+                      workshop.portraitDetail ? "aspect-[9/16]" : "aspect-[4/3]"
+                    }`}
+                  >
+                    <Image
+                      src={workshop.detailImage}
+                      alt={workshop.label}
+                      fill
+                      sizes="(min-width:768px) 50vw, 100vw"
+                      className="object-cover"
+                    />
                   </div>
                   <h1 className="mt-4 font-script text-3xl leading-tight md:text-4xl">{workshop.titleScript}</h1>
                   {capacityFor(caps, workshop.workshopId) < 1000 && (
